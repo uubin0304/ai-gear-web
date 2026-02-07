@@ -1,0 +1,39 @@
+@import "tailwindcss";
+
+@theme {
+  --color-background: #ffffff;
+  --color-surface: #ffffff;
+  --color-primary: #2563eb;
+  --color-text-main: #0f172a;
+  --color-text-muted: #64748b;
+
+  --animate-float: float 3s ease-in-out infinite;
+
+  --font-serif: "Playfair Display", "Noto Serif KR", serif;
+  --font-sans: 'NanumSquare Neo', sans-serif;
+
+  @keyframes float {
+
+    0%,
+    100% {
+      transform: translateY(0);
+    }
+
+    50% {
+      transform: translateY(-5px);
+    }
+  }
+}
+
+/* Custom Utilities if needed */
+@layer utilities {
+  .glass-card {
+    @apply bg-surface/50 backdrop-blur-xl border border-white/5;
+  }
+}
+
+body {
+  background-color: var(--color-background);
+  color: var(--color-text-main);
+  font-family: var(--font-sans);
+}
