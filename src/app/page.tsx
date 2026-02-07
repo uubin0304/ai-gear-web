@@ -138,8 +138,8 @@ export default async function Home() {
                 rel="noopener noreferrer"
                 className="group bg-white rounded-2xl overflow-hidden border border-slate-200 hover:border-blue-500 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 flex flex-col h-full"
               >
-                {/* 이미지 */}
-                  <div className="relative aspect-video w-full bg-slate-100 overflow-hidden">
+                {/* 이미지 - 1:1 정사각형 비율로 변경함 */}
+                <div className="relative aspect-square w-full bg-slate-100 overflow-hidden">
                   <Image
                     src={tool.image}
                     alt={tool.title}
