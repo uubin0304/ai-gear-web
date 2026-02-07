@@ -139,7 +139,7 @@ export default async function Home() {
                 className="group bg-white rounded-2xl overflow-hidden border border-slate-200 hover:border-blue-500 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 flex flex-col h-full"
               >
                 {/* 이미지 */}
-                <div className="relative h-48 w-full bg-slate-100 overflow-hidden">
+                  <div className="relative aspect-video w-full bg-slate-100 overflow-hidden">
                   <Image
                     src={tool.image}
                     alt={tool.title}
