@@ -1,11 +1,13 @@
 import Link from "next/link";
 import Image from "next/image";
 import { notFound } from "next/navigation";
+import { Metadata } from "next"; // 👈 [중요] 메타데이터 타입 불러오기
 
 // 타입 정의
 interface WPPost {
   id: number;
   title: { rendered: string };
+  excerpt: { rendered: string }; // 👈 요약문(excerpt) 추가됨
   content: { rendered: string };
   date: string;
   categories: number[];
@@ -39,19 +41,17 @@ async function getPost(id: string) {
   }
 }
 
-// 2. [New] 이전 글 / 다음 글 가져오기
+// 2. 이전 글 / 다음 글 가져오기
 async function getAdjacentPosts(currentDate: string) {
   try {
-    // 워드프레스 API 날짜 포맷 (ISO 8601)
     const date = new Date(currentDate).toISOString();
-
-    // 이전 글 (현재 날짜보다 이전인 글 중 1개)
+    
+    // 이전 글
     const prevRes = await fetch(
       `https://credivita.com/ai/wp-json/wp/v2/posts?_embed&per_page=1&order=desc&orderby=date&before=${date}`,
       { next: { revalidate: 60 } }
     );
-    
-    // 다음 글 (현재 날짜보다 이후인 글 중 1개)
+    // 다음 글
     const nextRes = await fetch(
       `https://credivita.com/ai/wp-json/wp/v2/posts?_embed&per_page=1&order=asc&orderby=date&after=${date}`,
       { next: { revalidate: 60 } }
@@ -70,7 +70,6 @@ async function getAdjacentPosts(currentDate: string) {
       prev: prevData.length > 0 ? formatPost(prevData[0]) : null,
       next: nextData.length > 0 ? formatPost(nextData[0]) : null,
     };
-
   } catch (error) {
     return { prev: null, next: null };
   }
@@ -97,6 +96,38 @@ async function getRelatedPosts(categoryId: number, currentPostId: number) {
   }
 }
 
+// ✨ [NEW] SEO 메타데이터 생성 함수 (이게 1단계 핵심!)
+export async function generateMetadata({ params }: { params: { id: string } }): Promise<Metadata> {
+  const { id } = await params;
+  const post = await getPost(id);
+
+  if (!post) {
+    return { title: "페이지를 찾을 수 없음" };
+  }
+
+  const title = stripHtml(post.title.rendered);
+  const description = post.excerpt?.rendered ? stripHtml(post.excerpt.rendered).slice(0, 160) : "AI 툴 상세 정보";
+  const image = post._embedded?.["wp:featuredmedia"]?.[0]?.source_url || "https://ai-tools.credivita.com/default-og.png";
+
+  return {
+    title: `${title} | AI Gear`,
+    description: description,
+    openGraph: {
+      title: title,
+      description: description,
+      images: [{ url: image }],
+      type: "article",
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: title,
+      description: description,
+      images: [image],
+    },
+  };
+}
+
+// 메인 컴포넌트
 export default async function ToolDetail({ params }: { params: { id: string } }) {
   const { id } = await params;
   const post: WPPost = await getPost(id);
@@ -106,7 +137,6 @@ export default async function ToolDetail({ params }: { params: { id: string } })
   const categoryId = post.categories?.[0] || 1;
   const categoryName = post._embedded?.["wp:term"]?.[0]?.[0]?.name || "AI Tool";
   
-  // 데이터 병렬로 가져오기 (관련글 + 이전/다음글)
   const [relatedPosts, adjacentPosts] = await Promise.all([
     getRelatedPosts(categoryId, post.id),
     getAdjacentPosts(post.date)
@@ -156,16 +186,13 @@ export default async function ToolDetail({ params }: { params: { id: string } })
             />
         </article>
 
-        {/* ✨ [New] 이전글 / 다음글 네비게이션 */}
+        {/* 이전글 / 다음글 네비게이션 */}
         <nav className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-16">
           {/* 이전 글 */}
           {adjacentPosts.prev ? (
             <Link href={`/tool/${adjacentPosts.prev.id}`} className="group relative h-32 md:h-40 rounded-xl overflow-hidden border border-stone-200">
-              {/* 배경 이미지 */}
               <Image src={adjacentPosts.prev.image} alt="prev" fill className="object-cover group-hover:scale-105 transition-transform duration-500" />
-              {/* 어두운 오버레이 */}
               <div className="absolute inset-0 bg-black/60 group-hover:bg-black/50 transition-colors"></div>
-              {/* 텍스트 내용 */}
               <div className="absolute inset-0 p-6 flex flex-col justify-center items-start text-white">
                 <span className="text-xs font-bold text-orange-300 mb-1 uppercase tracking-wider">Previous</span>
                 <span className="text-lg font-bold leading-tight line-clamp-2 group-hover:underline decoration-orange-400 underline-offset-4">
@@ -174,7 +201,7 @@ export default async function ToolDetail({ params }: { params: { id: string } })
               </div>
             </Link>
           ) : (
-            <div className="hidden md:block"></div> /* 빈 공간 채우기 */
+            <div className="hidden md:block"></div> 
           )}
 
           {/* 다음 글 */}
