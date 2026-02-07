@@ -1,96 +1,79 @@
-@import "tailwindcss";
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
-@theme {
-  /* 🎨 1. 컬러 팔레트 (따뜻한 주황/노랑 테마로 변경) */
-  --color-background: #fafaf9; /* stone-50 (따뜻한 배경) */
-  --color-surface: #ffffff;
-  --color-primary: #ea580c; /* Orange-600 */
-  --color-secondary: #f59e0b; /* Amber-500 */
-  --color-text-main: #1c1917; /* stone-900 */
-  --color-text-muted: #78716c; /* stone-500 */
-
-  /* 🔤 2. 폰트 설정 (layout.tsx의 변수와 연결) */
-  --font-sans: var(--font-sans), "Pretendard", -apple-system, BlinkMacSystemFont, system-ui, Roboto, "Helvetica Neue", "Segoe UI", "Apple SD Gothic Neo", "Malgun Gothic", "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", sans-serif;
-  --font-serif: var(--font-serif), "Playfair Display", "Noto Serif KR", serif;
-
-  /* 🎬 3. 애니메이션 단축어 */
-  --animate-float: float 3s ease-in-out infinite;
-  --animate-blob: blob 7s infinite;
-  --animate-shimmer: shimmer 2s linear infinite;
-}
-
-/* 🛠️ 4. 커스텀 유틸리티 */
-@layer utilities {
-  /* 🟠 주황-노랑 그라데이션 텍스트 (타이틀용) */
-  .text-gradient-sun {
-    background: linear-gradient(to right, #ea580c, #f59e0b, #fbbf24);
-    -webkit-background-clip: text;
-    background-clip: text;
-    color: transparent;
-  }
-
-  /* 유리 질감 카드 */
-  .glass-card {
-    @apply bg-white/60 backdrop-blur-xl border border-white/20 shadow-sm;
-  }
-
-  /* 애니메이션 딜레이 */
-  .animation-delay-2000 {
-    animation-delay: 2s;
-  }
-  .animation-delay-4000 {
-    animation-delay: 4s;
-  }
-  
-  /* 스크롤바 숨기기 */
-  .no-scrollbar::-webkit-scrollbar {
-    display: none;
-  }
-  .no-scrollbar {
-    -ms-overflow-style: none;
-    scrollbar-width: none;
-  }
-}
-
-/* 🌍 5. 기본 설정 */
-html {
-  scroll-behavior: smooth;
-  scroll-padding-top: 100px;
-}
-
+/* 1. 기본 스타일 (주황빛 테마 배경) */
 body {
-  background-color: var(--color-background);
-  color: var(--color-text-main);
-  font-family: var(--font-sans);
-  overflow-x: hidden;
+  background-color: #fafaf9; /* Warm Stone color */
+  color: #1c1917;
 }
 
-/* 🚫 6. 워드프레스 플러그인 숨기기 */
-.toc_container, 
-#ez-toc-container, 
-.lwptoc, 
-.ez-toc-v2_0_69 {
-  display: none !important;
-}
-
-/* 🎬 7. 키프레임 애니메이션 정의 */
+/* 2. 애니메이션 정의 (표준 CSS 방식) */
 
 /* 둥둥 떠다니는 효과 */
 @keyframes float {
   0%, 100% { transform: translateY(0px); }
   50% { transform: translateY(-10px); }
 }
+.animate-float {
+  animation: float 3s ease-in-out infinite;
+}
 
-/* 흐물거리는 오로라 */
+/* 배경 오로라 움직임 */
 @keyframes blob {
   0% { transform: translate(0px, 0px) scale(1); }
   33% { transform: translate(30px, -50px) scale(1.1); }
   66% { transform: translate(-20px, 20px) scale(0.9); }
   100% { transform: translate(0px, 0px) scale(1); }
 }
+.animate-blob {
+  animation: blob 7s infinite;
+}
 
-/* 반짝이는 효과 */
+/* 텍스트 반짝임 */
 @keyframes shimmer {
   from { background-position: 0 0; }
   to { background-position: -200% 0; }
+}
+.animate-shimmer {
+  animation: shimmer 2s linear infinite;
+}
+
+/* 3. 유틸리티 클래스 */
+
+/* 주황-노랑 그라데이션 텍스트 */
+.text-gradient-sun {
+  background: linear-gradient(to right, #ea580c, #f59e0b, #fbbf24);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* 애니메이션 딜레이 */
+.animation-delay-2000 {
+  animation-delay: 2s;
+}
+.animation-delay-4000 {
+  animation-delay: 4s;
+}
+
+/* 유리 질감 카드 */
+.glass-card {
+  background-color: rgba(255, 255, 255, 0.6);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+/* 스크롤바 숨김 */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* 워드프레스 목차 숨김 */
+.toc_container, #ez-toc-container {
+  display: none !important;
 }
