@@ -4,7 +4,7 @@ import { notFound } from "next/navigation";
 
 // 워드프레스 글 1개 가져오기
 async function getPost(id: string) {
-  const res = await fetch(`https://credivita.com/wp-json/wp/v2/posts/${id}?_embed`, {
+  const res = await fetch(`https://credivita.com/id/wp-json/wp/v2/posts/${id}?_embed`, {
     next: { revalidate: 60 },
   });
 
