@@ -47,6 +47,11 @@ export default function RootLayout({
     <html lang="ko">
       <head>
         <link href="https://hangeul.pstatic.net/hangeul_static/css/nanum-square-neo.css" rel="stylesheet" />
+        <script
+          async
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7040793716815812"
+          crossOrigin="anonymous"
+        ></script>
       </head>
       <body className={`${inter.variable} ${playfair.variable} ${notoSerifKR.variable} antialiased bg-slate-50 text-slate-900 font-sans`}>
         {children}
