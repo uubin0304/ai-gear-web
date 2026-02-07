@@ -52,9 +52,12 @@ export default function Home() {
           <span className="inline-block px-4 py-1.5 mb-6 text-sm font-semibold tracking-wider text-blue-600 uppercase bg-blue-50 rounded-full">
             The Best AI Tools Collection
           </span>
-          <h1 className="text-4xl md:text-6xl font-extrabold text-slate-900 tracking-tight mb-6">
-            AI 툴, <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-violet-600">고민 말고 여기서.</span>
-          </h1>
+        <h1 className="text-4xl md:text-6xl font-extrabold text-slate-900 tracking-tight mb-6">
+  AI 툴,{' '}
+  <span className="text-blue-600 inline-block transition-all duration-300 hover:scale-110 hover:text-blue-800 hover:rotate-2 cursor-default">
+    고민 말고 여기서.
+  </span>
+</h1>
           <p className="text-lg md:text-xl text-slate-600 max-w-2xl mx-auto leading-relaxed">
             복잡한 검색 없이 엄선된 최고의 AI 도구들을 만나보세요.<br className="hidden md:block" />
             실전에서 검증된 툴만 모았습니다.
