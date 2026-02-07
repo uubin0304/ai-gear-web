@@ -1,8 +1,7 @@
 /** @type {import('postcss-load-config').Config} */
 const config = {
   plugins: {
-    tailwindcss: {}, // 👈 v3 설정을 읽어주는 친구
-    autoprefixer: {}, // 👈 브라우저 호환성 맞춰주는 친구
+    "@tailwindcss/postcss": {}, // 👈 v4 전용 플러그인 (이게 맞습니다!)
   },
 };
 
