@@ -87,8 +87,10 @@ export default async function ToolDetail({ params }: { params: { id: string } })
           <time className="text-slate-400 text-sm">{date}</time>
         </header>
 
-        {/* 썸네일 이미지 */}
-        <div className="relative w-full aspect-video rounded-2xl overflow-hidden shadow-lg mb-12 border border-slate-200">
+{/* 썸네일 이미지 - 상세 페이지용 수정 코드 */}
+        {/* max-w-lg: 최대 크기 제한 (너무 커지지 않게) */}
+        {/* mx-auto: 화면 중앙 정렬 */}
+        <div className="relative w-full max-w-lg mx-auto aspect-square rounded-2xl overflow-hidden shadow-lg mb-12 border border-slate-200">
           <Image
             src={image}
             alt={title}
