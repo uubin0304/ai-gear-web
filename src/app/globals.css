@@ -2,13 +2,17 @@
 @tailwind components;
 @tailwind utilities;
 
-/* 1. 기본 스타일 (주황빛 테마 배경) */
+/* 1. 폰트 및 기본 스타일 설정 */
 body {
-  background-color: #fafaf9; /* Warm Stone color */
+  /* 👇 [중요] 나눔스퀘어 네오를 1순위로 지정했습니다! */
+  font-family: 'NanumSquare Neo', var(--font-sans), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  
+  /* 배경색: 따뜻한 Stone-50 */
+  background-color: #fafaf9; 
   color: #1c1917;
 }
 
-/* 2. 애니메이션 정의 (표준 CSS 방식) */
+/* 2. 애니메이션 정의 */
 
 /* 둥둥 떠다니는 효과 */
 @keyframes float {
@@ -41,7 +45,7 @@ body {
 
 /* 3. 유틸리티 클래스 */
 
-/* 주황-노랑 그라데이션 텍스트 */
+/* 주황-노랑 그라데이션 텍스트 (타이틀용) */
 .text-gradient-sun {
   background: linear-gradient(to right, #ea580c, #f59e0b, #fbbf24);
   -webkit-background-clip: text;
@@ -76,4 +80,10 @@ body {
 /* 워드프레스 목차 숨김 */
 .toc_container, #ez-toc-container {
   display: none !important;
+}
+
+/* 부드러운 스크롤 */
+html {
+  scroll-behavior: smooth;
+  scroll-padding-top: 100px;
 }
