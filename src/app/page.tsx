@@ -42,7 +42,7 @@ async function getPosts(): Promise<Tool[]> {
   try {
     // 👇 여기가 핵심! '&categories=5195'를 추가했습니다.
     const res = await fetch(
-      "https://credivita.com/wp-json/ai/wp/v2/posts?_embed&per_page=12&categories=5195", 
+      "https://credivita.com/ai/wp-json/wp/v2/posts?_embed&per_page=12&categories=5195", 
       {
         next: { revalidate: 60 }, // 60초마다 데이터 갱신 (새 글 바로 반영)
       }
