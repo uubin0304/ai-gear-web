@@ -1,89 +1,74 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
 
-/* 1. 폰트 및 기본 스타일 설정 */
-body {
-  /* 👇 [중요] 나눔스퀘어 네오를 1순위로 지정했습니다! */
-  font-family: 'NanumSquare Neo', var(--font-sans), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+/* 🎨 1. 테마 설정 (v4 방식) */
+@theme {
+  /* 폰트 연결 */
+  --font-sans: "NanumSquare Neo", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   
-  /* 배경색: 따뜻한 Stone-50 */
-  background-color: #fafaf9; 
-  color: #1c1917;
+  /* 애니메이션 정의 */
+  --animate-float: float 3s ease-in-out infinite;
+  --animate-blob: blob 7s infinite;
+  --animate-shimmer: shimmer 2s linear infinite;
+
+  @keyframes float {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-10px); }
+  }
+
+  @keyframes blob {
+    0% { transform: translate(0px, 0px) scale(1); }
+    33% { transform: translate(30px, -50px) scale(1.1); }
+    66% { transform: translate(-20px, 20px) scale(0.9); }
+    100% { transform: translate(0px, 0px) scale(1); }
+  }
+
+  @keyframes shimmer {
+    from { background-position: 0 0; }
+    to { background-position: -200% 0; }
+  }
 }
 
-/* 2. 애니메이션 정의 */
-
-/* 둥둥 떠다니는 효과 */
-@keyframes float {
-  0%, 100% { transform: translateY(0px); }
-  50% { transform: translateY(-10px); }
-}
-.animate-float {
-  animation: float 3s ease-in-out infinite;
-}
-
-/* 배경 오로라 움직임 */
-@keyframes blob {
-  0% { transform: translate(0px, 0px) scale(1); }
-  33% { transform: translate(30px, -50px) scale(1.1); }
-  66% { transform: translate(-20px, 20px) scale(0.9); }
-  100% { transform: translate(0px, 0px) scale(1); }
-}
-.animate-blob {
-  animation: blob 7s infinite;
+/* 🛠️ 2. 유틸리티 및 기본 설정 */
+@layer base {
+  body {
+    background-color: #fafaf9; /* 따뜻한 배경색 */
+    color: #1c1917;
+    font-family: var(--font-sans);
+  }
+  
+  html {
+    scroll-behavior: smooth;
+    scroll-padding-top: 100px;
+  }
 }
 
-/* 텍스트 반짝임 */
-@keyframes shimmer {
-  from { background-position: 0 0; }
-  to { background-position: -200% 0; }
-}
-.animate-shimmer {
-  animation: shimmer 2s linear infinite;
+@layer utilities {
+  /* 주황빛 그라데이션 텍스트 */
+  .text-gradient-sun {
+    background: linear-gradient(to right, #ea580c, #f59e0b, #fbbf24);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  /* 유리 질감 카드 */
+  .glass-card {
+    background-color: rgba(255, 255, 255, 0.6);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+  }
+
+  /* 스크롤바 숨김 */
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
 }
 
-/* 3. 유틸리티 클래스 */
-
-/* 주황-노랑 그라데이션 텍스트 (타이틀용) */
-.text-gradient-sun {
-  background: linear-gradient(to right, #ea580c, #f59e0b, #fbbf24);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-}
-
-/* 애니메이션 딜레이 */
-.animation-delay-2000 {
-  animation-delay: 2s;
-}
-.animation-delay-4000 {
-  animation-delay: 4s;
-}
-
-/* 유리 질감 카드 */
-.glass-card {
-  background-color: rgba(255, 255, 255, 0.6);
-  backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-}
-
-/* 스크롤바 숨김 */
-.no-scrollbar::-webkit-scrollbar {
-  display: none;
-}
-.no-scrollbar {
-  -ms-overflow-style: none;
-  scrollbar-width: none;
-}
-
-/* 워드프레스 목차 숨김 */
-.toc_container, #ez-toc-container {
+/* 🚫 워드프레스 목차 숨김 */
+.toc_container, #ez-toc-container, .lwptoc, .ez-toc-v2_0_69 {
   display: none !important;
-}
-
-/* 부드러운 스크롤 */
-html {
-  scroll-behavior: smooth;
-  scroll-padding-top: 100px;
 }
