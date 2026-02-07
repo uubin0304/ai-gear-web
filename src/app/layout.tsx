@@ -53,6 +53,8 @@ export default function RootLayout({
           crossOrigin="anonymous"
         ></script>
       </head>
+      <meta name="google-site-verification" content="OpG3PDf9LT1cuS6t6t5v07uXaYl2_CtV2o2VbLKnxiE" />
+      <meta name="naver-site-verification" content="7bdda18d7419a1e28d120b1f033c0dc570147c60" />
       <body className={`${inter.variable} ${playfair.variable} ${notoSerifKR.variable} antialiased bg-slate-50 text-slate-900 font-sans`}>
         {children}
       </body>
