@@ -79,3 +79,9 @@ body {
   background-size: 200% 200%;
   animation: text-shimmer 3s ease-out infinite alternate;
 }
+/* globals.css 맨 아래에 추가 */
+
+html {
+  scroll-behavior: smooth; /* 스르륵 이동하는 마법 */
+  scroll-padding-top: 100px; /* 헤더에 가려지지 않게 여유 공간 줌 */
+}
