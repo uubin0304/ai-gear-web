@@ -85,3 +85,30 @@ html {
   scroll-behavior: smooth; /* 스르륵 이동하는 마법 */
   scroll-padding-top: 100px; /* 헤더에 가려지지 않게 여유 공간 줌 */
 }
+/* src/app/globals.css 맨 아래에 추가 */
+
+@layer utilities {
+  .animation-delay-2000 {
+    animation-delay: 2s;
+  }
+  .animation-delay-4000 {
+    animation-delay: 4s;
+  }
+}
+
+/* 🟢 배경 오로라 애니메이션 정의 (이게 없어서 배경이 멈춰 있었던 겁니다!) */
+@keyframes blob {
+  0% { transform: translate(0px, 0px) scale(1); }
+  33% { transform: translate(30px, -50px) scale(1.1); }
+  66% { transform: translate(-20px, 20px) scale(0.9); }
+  100% { transform: translate(0px, 0px) scale(1); }
+}
+
+.animate-blob {
+  animation: blob 7s infinite;
+}
+
+/* 부드러운 스크롤 */
+html {
+  scroll-behavior: smooth;
+}
