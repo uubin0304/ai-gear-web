@@ -2,24 +2,32 @@ import Link from "next/link";
 import Image from "next/image";
 import { notFound } from "next/navigation";
 
-// 타입 정의
+// 1. 타입 정의 (명확하게 선언!)
 interface WPPost {
   id: number;
   title: { rendered: string };
   content: { rendered: string };
   date: string;
-  categories: number[]; // 카테고리 ID 배열
+  categories: number[];
   _embedded?: {
     "wp:featuredmedia"?: Array<{ source_url: string }>;
     "wp:term"?: Array<Array<{ name: string; id: number }>>;
   };
 }
 
+// ✨ [New] 관련 글 타입 정의 (이게 없어서 오류가 났던 것!)
+interface RelatedPost {
+  id: number;
+  title: string;
+  image: string;
+  category: string;
+}
+
 function stripHtml(html: string) {
   return html.replace(/<[^>]*>?/gm, "").replace(/&[^;]+;/gm, " ").trim();
 }
 
-// 1. 상세 글 가져오기
+// 2. 상세 글 가져오기
 async function getPost(id: string) {
   try {
     const res = await fetch(
@@ -33,8 +41,8 @@ async function getPost(id: string) {
   }
 }
 
-// 2. ✨ [New] 관련 글 가져오기 (같은 카테고리, 현재 글 제외)
-async function getRelatedPosts(categoryId: number, currentPostId: number) {
+// 3. 관련 글 가져오기 (반환 타입 명시함: Promise<RelatedPost[]>)
+async function getRelatedPosts(categoryId: number, currentPostId: number): Promise<RelatedPost[]> {
   try {
     const res = await fetch(
       `https://credivita.com/ai/wp-json/wp/v2/posts?_embed&categories=${categoryId}&exclude=${currentPostId}&per_page=4`,
@@ -110,7 +118,7 @@ export default async function ToolDetail({ params }: { params: { id: string } })
             />
         </article>
 
-        {/* ✨ [New] 함께 보면 좋은 툴 섹션 (Internal Linking) */}
+        {/* 관련 툴 섹션 */}
         {relatedPosts.length > 0 && (
           <section>
             <h2 className="text-2xl font-bold text-slate-900 mb-6 flex items-center gap-2">
