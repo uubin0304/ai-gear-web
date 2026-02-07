@@ -37,3 +37,12 @@ body {
   color: var(--color-text-main);
   font-family: var(--font-sans);
 }
+/* src/app/globals.css 맨 아래에 추가 */
+
+/* 워드프레스 자동 목차 숨기기 */
+.toc_container, 
+#ez-toc-container, 
+.lwptoc, 
+.ez-toc-v2_0_69 {
+  display: none !important;
+}
