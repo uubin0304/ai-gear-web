@@ -7,34 +7,26 @@ const playfair = Playfair_Display({ subsets: ["latin"], variable: "--font-serif"
 const notoSerifKR = Noto_Serif_KR({ subsets: ["latin"], weight: ["400", "700"], variable: "--font-serif-kr" });
 
 export const metadata: Metadata = {
+  metadataBase: new URL('https://ai-tools.credivita.com'), // 사이트 주소 명시
   title: {
     default: "AI Gear - 실전 압축 AI 툴 디렉토리",
     template: "%s | AI Gear",
   },
-  description: "복잡한 AI, 쉽게 골라드립니다. 영상 편집부터 글쓰기까지, 검증된 AI 도구 모음.",
+  description: "복잡한 AI, 쉽게 골라드립니다. 영상 편집부터 글쓰기까지, 검증된 툴만 모았습니다.",
   openGraph: {
     title: "AI Gear - 실전 압축 AI 툴 디렉토리",
-    description: "복잡한 AI, 쉽게 골라드립니다. 영상 편집부터 글쓰기까지, 검증된 AI 도구 모음.",
+    description: "복잡한 AI, 쉽게 골라드립니다. 영상 편집부터 글쓰기까지, 검증된 툴만 모았습니다.",
+    url: "https://ai-tools.credivita.com",
     siteName: "AI Gear",
-    locale: "ko_KR",
-    type: "website",
-    url: "https://ai-gear.vercel.app", // Fallback URL
     images: [
       {
-        url: "https://images.unsplash.com/photo-1620712943543-bcc4688e7485?q=80&w=1200", // Using FeaturedPost image as OG image
+        url: "/og-image.png", // public 폴더에 넣은 이미지 이름
         width: 1200,
         height: 630,
-        alt: "AI Gear Featured Image",
       },
     ],
-  },
-  robots: {
-    index: true,
-    follow: true,
-    googleBot: {
-      index: true,
-      follow: true,
-    },
+    locale: "ko_KR",
+    type: "website",
   },
 };
 
