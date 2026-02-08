@@ -20,7 +20,7 @@ export const metadata: Metadata = {
     siteName: "AI Gear",
     images: [
       {
-        url: "/og-image.png", // public 폴더에 넣은 이미지 이름
+        url: "/og-image.jpg", // public 폴더에 넣은 이미지 이름
         width: 1200,
         height: 630,
       },
