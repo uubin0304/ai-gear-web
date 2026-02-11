@@ -21,7 +21,7 @@ function getFeaturedImage(post: any) {
   return post?._embedded?.["wp:featuredmedia"]?.[0]?.source_url || null;
 }
 
-// 🛠️ 3. 데이터 가져오기 (로직 업그레이드: 썸네일 포함)
+// 🛠️ 3. 데이터 가져오기
 async function getPostData(id: string) {
   // (1) 현재 글 가져오기
   const res = await fetch(`https://credivita.com/ai/wp-json/wp/v2/posts/${id}?_embed`, {
@@ -35,7 +35,10 @@ async function getPostData(id: string) {
     `https://credivita.com/ai/wp-json/wp/v2/posts?per_page=100&_fields=id`, 
     { next: { revalidate: 60 } }
   );
+  
+  // 목록 가져오기 실패 시 현재 글만 반환
   if (!listRes.ok) return { post, prevPost: null, nextPost: null };
+  
   const allPosts = await listRes.json();
   
   // (3) 현재 글 위치 찾기
@@ -45,7 +48,7 @@ async function getPostData(id: string) {
   const prevId = currentIndex !== -1 ? allPosts[currentIndex + 1]?.id : null;
   const nextId = currentIndex !== -1 ? allPosts[currentIndex - 1]?.id : null;
 
-  // (5) 이전글/다음글 상세 정보 병렬로 가져오기 (이미지 때문에 필요!)
+  // (5) 이전글/다음글 상세 정보 병렬로 가져오기
   const [prevPost, nextPost] = await Promise.all([
     prevId ? fetch(`https://credivita.com/ai/wp-json/wp/v2/posts/${prevId}?_embed`).then(r => r.ok ? r.json() : null) : null,
     nextId ? fetch(`https://credivita.com/ai/wp-json/wp/v2/posts/${nextId}?_embed`).then(r => r.ok ? r.json() : null) : null
@@ -54,6 +57,7 @@ async function getPostData(id: string) {
   return { post, prevPost, nextPost };
 }
 
+// 🛠️ 4. 메타데이터 생성 (SEO)
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
   const { id } = await params;
   const data = await getPostData(id);
@@ -71,6 +75,7 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
   };
 }
 
+// 🛠️ 5. 메인 페이지 컴포넌트
 export default async function Page({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const data = await getPostData(id);
@@ -79,7 +84,6 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
 
   const { post, prevPost, nextPost } = data;
   const featuredImage = getFeaturedImage(post);
-  const cleanTitle = decodeHtmlEntity(post.title.rendered);
 
   return (
     <main className="min-h-screen relative overflow-hidden pb-20">
@@ -109,7 +113,7 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
                 <div className="relative w-full max-w-lg mx-auto aspect-square rounded-2xl overflow-hidden shadow-lg mb-12 border border-stone-200">
                 <Image
                     src={featuredImage} 
-                    alt={cleanTitle}
+                    alt="Featured Image"
                     fill
                     className="object-cover"
                     priority
@@ -117,13 +121,23 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
                 </div>
             )}
 
+            {/* 👇 여기가 핵심! 모바일 가독성 최적화된 본문 영역 */}
             <div
-                className="prose prose-lg max-w-none prose-slate prose-headings:font-bold prose-a:text-orange-600 hover:prose-a:text-orange-800 prose-img:rounded-xl break-words mb-12"
+                className="
+                    prose max-w-none text-slate-800 break-words mb-12
+                    prose-p:text-[17px] prose-p:leading-[1.8] prose-p:my-6 prose-p:tracking-[-0.3px]
+                    prose-headings:font-bold prose-headings:break-keep
+                    prose-h2:text-[22px] prose-h2:mt-10 prose-h2:mb-4
+                    prose-h3:text-[19px] prose-h3:mt-8
+                    prose-a:text-orange-600 prose-a:no-underline hover:prose-a:text-orange-800
+                    prose-img:rounded-xl prose-img:shadow-md prose-img:my-8
+                    md:prose-p:text-[18px] md:prose-p:leading-loose
+                "
                 dangerouslySetInnerHTML={{ __html: post.content.rendered }}
             />
           </div>
 
-          {/* 👇 디자인 적용된 이전글/다음글 내비게이션 (여기부터 수정됨) */}
+          {/* 👇 하단 내비게이션 (이전글/다음글) */}
           <div className="grid grid-cols-1 md:grid-cols-2 border-t border-stone-100">
             
             {/* 1. 이전 글 카드 */}
@@ -138,18 +152,15 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
                      className="object-cover transition-transform duration-500 group-hover:scale-105"
                    />
                 ) : (
-                   <div className="w-full h-full bg-slate-800" /> // 이미지 없을 때 배경색
+                   <div className="w-full h-full bg-slate-800" /> 
                 )}
                 
-                {/* 검은색 오버레이 (글씨 잘 보이게) */}
                 <div className="absolute inset-0 bg-black/50 group-hover:bg-black/60 transition-colors duration-300"></div>
 
-                {/* 뱃지 (왼쪽 상단) */}
                 <div className="absolute top-0 left-0 bg-slate-800/80 text-white text-xs px-4 py-2 font-bold backdrop-blur-sm">
                   이전글
                 </div>
 
-                {/* 제목 (중앙 정렬) */}
                 <div className="absolute inset-0 flex items-center justify-center p-8 text-center">
                     <span className="text-white font-bold text-xl md:text-2xl leading-tight drop-shadow-md group-hover:text-orange-200 transition-colors"
                           dangerouslySetInnerHTML={{ __html: prevPost.title.rendered }}
@@ -157,7 +168,6 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
                 </div>
               </Link>
             ) : (
-                // 이전 글 없을 때 빈 공간 (회색 처리)
                 <div className="hidden md:block bg-slate-50 h-48 md:h-60 relative">
                     <div className="absolute inset-0 flex items-center justify-center text-slate-300 font-medium">
                         첫 번째 글입니다
@@ -168,7 +178,6 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
             {/* 2. 다음 글 카드 */}
             {nextPost ? (
               <Link href={`/tool/${nextPost.id}`} className="group relative h-48 md:h-60 overflow-hidden block w-full border-l border-white/10">
-                {/* 배경 이미지 */}
                 {getFeaturedImage(nextPost) ? (
                    <Image 
                      src={getFeaturedImage(nextPost)} 
@@ -180,15 +189,12 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
                    <div className="w-full h-full bg-slate-800" />
                 )}
 
-                {/* 검은색 오버레이 */}
                 <div className="absolute inset-0 bg-black/50 group-hover:bg-black/60 transition-colors duration-300"></div>
 
-                {/* 뱃지 (오른쪽 상단) */}
                 <div className="absolute top-0 right-0 bg-slate-800/80 text-white text-xs px-4 py-2 font-bold backdrop-blur-sm">
                   다음글
                 </div>
 
-                {/* 제목 */}
                 <div className="absolute inset-0 flex items-center justify-center p-8 text-center">
                     <span className="text-white font-bold text-xl md:text-2xl leading-tight drop-shadow-md group-hover:text-orange-200 transition-colors"
                           dangerouslySetInnerHTML={{ __html: nextPost.title.rendered }}
@@ -196,17 +202,13 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
                 </div>
               </Link>
             ) : (
-                // 다음 글 없을 때
                 <div className="hidden md:block bg-slate-50 h-48 md:h-60 relative">
                     <div className="absolute inset-0 flex items-center justify-center text-slate-300 font-medium">
                         마지막 글입니다
                     </div>
                 </div>
             )}
-
           </div>
-          {/* 👆 내비게이션 끝 */}
-
         </article>
       </div>
     </main>
