@@ -74,17 +74,18 @@
 }
 /* Next.js 프로젝트의 globals.css 맨 아래에 추가 */
 
-/* 1. 워드프레스에서 넘어오는 blockquote와 info-box 스타일링 */
+/* 1. 워드프레스에서 넘어오는 blockquote와 info-box 스타일링 (모바일 최적화 수정됨) */
 .prose blockquote, 
 .prose .info-box {
     background-color: #f8fafc !important;
     border-left: 4px solid #f97316 !important;
-    padding: 20px 25px !important;
+    padding: 16px 20px !important; /* 👈 기존 25px에서 줄임 (모바일 공간 확보) */
     border-radius: 12px !important;
     color: #475569 !important;
-    line-height: 1.7;
-    margin: 20px 0;
+    line-height: 1.6; 
+    margin: 24px 0;
     font-style: normal !important;
+    font-size: 0.95em;
     border-top: none;
     border-right: none;
     border-bottom: none;
