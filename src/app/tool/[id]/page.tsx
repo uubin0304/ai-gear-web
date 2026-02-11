@@ -12,10 +12,13 @@ async function getPost(id: string) {
   return res.json();
 }
 
-export default async function Page({ params }: { params: { id: string } }) {
-  const post = await getPost(params.id);
+export default async function Page({ params }: { params: Promise<{ id: string }> }) {
+  // params를 await로 먼저 풀어줘야 합니다.
+  const { id } = await params; 
+  const post = await getPost(id);
 
   if (!post) return notFound();
+  // ... 나머지 동일
 
   // 2. 워드프레스 썸네일 주소 추출하기 (없으면 기본 이미지 사용)
   const featuredImage = 
