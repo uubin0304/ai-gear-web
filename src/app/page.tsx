@@ -19,6 +19,7 @@ interface Tool {
   category: string;
 }
 
+// HTML 태그 제거 함수
 function stripHtml(html: string) {
   return html.replace(/<[^>]*>?/gm, "").replace(/&[^;]+;/gm, " ").trim();
 }
@@ -26,14 +27,40 @@ function stripHtml(html: string) {
 async function getPosts(categoryId?: string): Promise<Tool[]> {
   try {
     const categoryQuery = categoryId ? `&categories=${categoryId}` : "";
-    // fetch 괄호 안에 URL과 옵션이 모두 들어가야 합니다!
+    
     const res = await fetch(
       `https://credivita.com/ai/wp-json/wp/v2/posts?_embed${categoryQuery}`,
       { next: { revalidate: 60 } } 
     );
 
-    if (!res.ok) return []; // 에러 시 빈 배열 반환해서 화면 터짐 방지
-    return res.json();
+    if (!res.ok) return []; 
+    
+    const data = await res.json();
+
+    // 🔥 [핵심 수정] 받아온 데이터를 Tool 형식으로 깨끗하게 가공합니다.
+    const tools: Tool[] = data.map((post: any) => {
+      // 1. 썸네일 이미지 추출 (없으면 기본 이미지)
+      const imageUrl = 
+        post._embedded?.['wp:featuredmedia']?.[0]?.source_url || 
+        "https://via.placeholder.com/600x400?text=No+Image"; // 대체 이미지
+
+      // 2. 카테고리 이름 추출 (첫 번째 카테고리 사용)
+      const categoryName = 
+        post._embedded?.['wp:term']?.[0]?.[0]?.name || "AI";
+
+      return {
+        id: post.id,
+        // 워드프레스는 title.rendered에 실제 제목이 들어있습니다.
+        title: post.title.rendered, 
+        // excerpt.rendered에 요약글이 들어있고, HTML 태그를 제거해줍니다.
+        description: stripHtml(post.excerpt?.rendered || ""), 
+        image: imageUrl,
+        category: categoryName,
+      };
+    });
+
+    return tools;
+
   } catch (error) {
     console.error("데이터 가져오기 실패:", error);
     return [];
@@ -41,14 +68,15 @@ async function getPosts(categoryId?: string): Promise<Tool[]> {
 }
 
 export default async function Home({ searchParams }: { searchParams: { category?: string } }) {
-  const params = await searchParams;
-  const currentCategoryId = params.category;
+  // Next.js 15+ 에서는 searchParams를 await 해야 할 수 있습니다. (버전에 따라 다름)
+  const params = await searchParams; // Next.js 버전에 따라 await가 필요 없을 수도 있음
+  const currentCategoryId = params?.category;
   const tools = await getPosts(currentCategoryId);
 
   return (
     <main className="min-h-screen relative overflow-hidden">
       
-      {/* 🟠 1. 배경 오로라 효과 (globals.css 애니메이션 연동) */}
+      {/* 🟠 1. 배경 오로라 효과 */}
       <div className="absolute top-0 left-0 w-full h-full overflow-hidden -z-10 pointer-events-none">
         <div className="absolute top-0 left-1/4 w-96 h-96 bg-orange-300 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob"></div>
         <div className="absolute top-0 right-1/4 w-96 h-96 bg-yellow-200 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob animation-delay-2000"></div>
@@ -58,7 +86,7 @@ export default async function Home({ searchParams }: { searchParams: { category?
       <section className="relative pt-24 pb-16 px-4">
         <div className="max-w-7xl mx-auto text-center relative z-10">
           
-          {/* 🟠 2. 상단 뱃지 (주황색) */}
+          {/* 🟠 2. 상단 뱃지 */}
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-orange-50 border border-orange-100 text-orange-600 text-xs font-bold mb-8 shadow-sm">
             <span className="relative flex h-2 w-2">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-orange-400 opacity-75"></span>
@@ -67,10 +95,10 @@ export default async function Home({ searchParams }: { searchParams: { category?
             실시간 업데이트 중
           </div>
 
-          {/* 🟠 3. 메인 타이틀 (둥둥 뜨는 애니메이션 + 그라데이션) */}
+          {/* 🟠 3. 메인 타이틀 */}
           <h1 className="text-5xl md:text-7xl font-extrabold text-slate-900 mb-8 tracking-tight leading-tight cursor-default">
             AI 툴, <br className="md:hidden" />
-            <span className="inline-block animate-float text-gradient-sun pb-2 drop-shadow-sm">
+            <span className="inline-block animate-float text-gradient-sun pb-2 drop-shadow-sm text-transparent bg-clip-text bg-gradient-to-r from-orange-400 to-amber-600">
               고민 말고 여기서.
             </span>
           </h1>
@@ -80,10 +108,14 @@ export default async function Home({ searchParams }: { searchParams: { category?
             엄선된 AI 도구와 가이드로 생산성을 200% 높여보세요.
           </p>
           
-          {/* 🟠 4. 카테고리 탭 (주황색 버튼) */}
+          {/* 🟠 4. 카테고리 탭 */}
           <div className="flex items-center justify-start md:justify-center gap-3 overflow-x-auto pb-6 pt-2 px-4 no-scrollbar scroll-smooth">
             {AI_CATEGORIES.map((cat) => {
-              const isActive = (currentCategoryId === cat.id?.toString()) || (!currentCategoryId && !cat.id);
+              // category 파라미터가 없을 때 '전체'가 활성화되도록 로직 수정
+              const isAll = cat.id === null && !currentCategoryId;
+              const isSelected = currentCategoryId === cat.id?.toString();
+              const isActive = isAll || isSelected;
+
               return (
                 <Link
                   key={cat.slug}
@@ -111,13 +143,14 @@ export default async function Home({ searchParams }: { searchParams: { category?
       <section className="max-w-7xl mx-auto px-4 pb-24">
         {tools.length === 0 ? (
           <div className="text-center py-20 bg-white/50 backdrop-blur-sm rounded-3xl border border-dashed border-orange-200">
-            <p className="text-xl text-slate-600 font-medium mb-2">아직 등록된 글이 없어요! 😅</p>
+            <p className="text-xl text-slate-600 font-medium mb-2">아직 등록된 글이 없거나 불러오는 중입니다! 😅</p>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {tools.map((tool) => (
               <Link key={tool.id} href={`/tool/${tool.id}`} className="group relative bg-white rounded-2xl overflow-hidden border border-stone-100 hover:border-orange-400 hover:shadow-xl hover:shadow-orange-100 transition-all duration-300 flex flex-col h-full hover:-translate-y-1">
                 <div className="relative aspect-square w-full overflow-hidden bg-stone-100">
+                  {/* 이미지가 유효한지 확인 필요, 외부 이미지 도메인 next.config.js 설정 필요 */}
                   <Image src={tool.image} alt={tool.title} fill className="object-cover group-hover:scale-105 transition-transform duration-500" />
                   <div className="absolute top-3 left-3">
                     <span className="px-2.5 py-1 text-[10px] font-bold text-white bg-black/40 backdrop-blur-md rounded-full border border-white/10 uppercase tracking-wider">
@@ -126,9 +159,13 @@ export default async function Home({ searchParams }: { searchParams: { category?
                   </div>
                 </div>
                 <div className="p-5 flex flex-col flex-grow">
-                  {/* 제목 호버 시 주황색 */}
-                  <h3 className="font-bold text-slate-900 mb-2 line-clamp-1 group-hover:text-orange-600 text-lg transition-colors">{tool.title}</h3>
-                  <p className="text-slate-500 text-sm line-clamp-2 mb-4 leading-relaxed flex-grow">{tool.description}</p>
+                  <h3 
+                    className="font-bold text-slate-900 mb-2 line-clamp-1 group-hover:text-orange-600 text-lg transition-colors"
+                    dangerouslySetInnerHTML={{ __html: tool.title }} 
+                  />
+                  <p className="text-slate-500 text-sm line-clamp-2 mb-4 leading-relaxed flex-grow">
+                    {tool.description}
+                  </p>
                 </div>
               </Link>
             ))}
