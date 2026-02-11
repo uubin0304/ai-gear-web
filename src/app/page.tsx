@@ -25,17 +25,17 @@ function stripHtml(html: string) {
 
 async function getPosts(categoryId?: string): Promise<Tool[]> {
   try {
-    // 1. 목록을 가져올 때는 posts 뒤에 id가 아니라 전체 목록 쿼리가 와야 합니다.
     const categoryQuery = categoryId ? `&categories=${categoryId}` : "";
+    // fetch 괄호 안에 URL과 옵션이 모두 들어가야 합니다!
     const res = await fetch(
-      `https://credivita.com/ai/wp-json/wp/v2/posts?_embed${categoryQuery}`, 
-      { next: { revalidate: 60 } } // 괄호 위치 확인! fetch 함수 안에 들어와야 합니다.
+      `https://credivita.com/ai/wp-json/wp/v2/posts?_embed${categoryQuery}`,
+      { next: { revalidate: 60 } } 
     );
 
-    if (!res.ok) throw new Error("Failed to fetch posts");
+    if (!res.ok) return []; // 에러 시 빈 배열 반환해서 화면 터짐 방지
     return res.json();
   } catch (error) {
-    console.error(error);
+    console.error("데이터 가져오기 실패:", error);
     return [];
   }
 }
