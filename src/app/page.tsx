@@ -25,21 +25,17 @@ function stripHtml(html: string) {
 
 async function getPosts(categoryId?: string): Promise<Tool[]> {
   try {
+    // 1. 목록을 가져올 때는 posts 뒤에 id가 아니라 전체 목록 쿼리가 와야 합니다.
     const categoryQuery = categoryId ? `&categories=${categoryId}` : "";
     const res = await fetch(
-      `https://credivita.com/ai/wp-json/wp/v2/posts?_embed&per_page=100${categoryQuery}`,
-      { next: { revalidate: 60 } }
+      `https://credivita.com/ai/wp-json/wp/v2/posts?_embed${categoryQuery}`, 
+      { next: { revalidate: 60 } } // 괄호 위치 확인! fetch 함수 안에 들어와야 합니다.
     );
-    if (!res.ok) return [];
-    const posts = await res.json();
-    return posts.map((post: any) => ({
-      id: post.id,
-      title: stripHtml(post.title.rendered),
-      description: stripHtml(post.excerpt.rendered).slice(0, 80) + "...",
-      image: post._embedded?.["wp:featuredmedia"]?.[0]?.source_url || "https://images.unsplash.com/photo-1620712943543-bcc4688e7485?w=800",
-      category: post._embedded?.["wp:term"]?.[0]?.[0]?.name || "AI Tool",
-    }));
+
+    if (!res.ok) throw new Error("Failed to fetch posts");
+    return res.json();
   } catch (error) {
+    console.error(error);
     return [];
   }
 }
