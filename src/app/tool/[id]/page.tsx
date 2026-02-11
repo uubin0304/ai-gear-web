@@ -3,7 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Metadata } from "next";
 
-// 🛠️ 1. 특수문자 디코딩 함수
+// 🛠️ 1. 특수문자 깨짐 방지 함수
 function decodeHtmlEntity(str: string) {
   if (!str) return "";
   return str.replace(/&#(\d+);/g, (match, dec) => String.fromCharCode(dec))
@@ -16,39 +16,42 @@ function decodeHtmlEntity(str: string) {
             .replace(/&#8216;/g, "'");
 }
 
-// 🛠️ 2. 이미지 URL 추출 헬퍼 함수
+// 🛠️ 2. [핵심] 워드프레스 똥(?) 스타일 제거 함수 (세탁기)
+// 이 함수가 없으면 모바일에서 글씨가 절대 안 커집니다.
+function cleanContentStyles(content: string) {
+  if (!content) return "";
+  return content
+    // 워드프레스가 강제로 박아놓은 폰트 크기, 줄간격, 너비 제한을 삭제합니다.
+    .replace(/style="[^"]*"/g, "") 
+    .replace(/width="[^"]*"/g, "")
+    .replace(/height="[^"]*"/g, "");
+}
+
+// 🛠️ 3. 이미지 URL 추출 함수
 function getFeaturedImage(post: any) {
   return post?._embedded?.["wp:featuredmedia"]?.[0]?.source_url || null;
 }
 
-// 🛠️ 3. 데이터 가져오기
+// 🛠️ 4. 데이터 가져오기 (이전글/다음글 포함)
 async function getPostData(id: string) {
-  // (1) 현재 글 가져오기
   const res = await fetch(`https://credivita.com/ai/wp-json/wp/v2/posts/${id}?_embed`, {
     next: { revalidate: 60 }
   });
   if (!res.ok) return null;
   const post = await res.json();
 
-  // (2) 전체 글 ID 목록 가져오기 (가볍게)
   const listRes = await fetch(
-    `https://credivita.com/ai/wp-json/wp/v2/posts?per_page=100&_fields=id`, 
+    `https://credivita.com/ai/wp-json/wp/v2/posts?per_page=100&_fields=id,title`, 
     { next: { revalidate: 60 } }
   );
   
-  // 목록 가져오기 실패 시 현재 글만 반환
   if (!listRes.ok) return { post, prevPost: null, nextPost: null };
-  
   const allPosts = await listRes.json();
   
-  // (3) 현재 글 위치 찾기
   const currentIndex = allPosts.findIndex((p: any) => p.id === parseInt(id));
-  
-  // (4) 이전글/다음글 ID 추출
   const prevId = currentIndex !== -1 ? allPosts[currentIndex + 1]?.id : null;
   const nextId = currentIndex !== -1 ? allPosts[currentIndex - 1]?.id : null;
 
-  // (5) 이전글/다음글 상세 정보 병렬로 가져오기
   const [prevPost, nextPost] = await Promise.all([
     prevId ? fetch(`https://credivita.com/ai/wp-json/wp/v2/posts/${prevId}?_embed`).then(r => r.ok ? r.json() : null) : null,
     nextId ? fetch(`https://credivita.com/ai/wp-json/wp/v2/posts/${nextId}?_embed`).then(r => r.ok ? r.json() : null) : null
@@ -57,7 +60,6 @@ async function getPostData(id: string) {
   return { post, prevPost, nextPost };
 }
 
-// 🛠️ 4. 메타데이터 생성 (SEO)
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
   const { id } = await params;
   const data = await getPostData(id);
@@ -75,7 +77,6 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
   };
 }
 
-// 🛠️ 5. 메인 페이지 컴포넌트
 export default async function Page({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const data = await getPostData(id);
@@ -85,16 +86,12 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
   const { post, prevPost, nextPost } = data;
   const featuredImage = getFeaturedImage(post);
 
-  return (
-    <main className="min-h-screen relative overflow-hidden pb-20">
-      
-      {/* 배경 효과 */}
-      <div className="absolute top-0 left-0 w-full h-full overflow-hidden -z-10 pointer-events-none">
-        <div className="absolute top-0 left-1/4 w-96 h-96 bg-orange-300 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob"></div>
-        <div className="absolute top-0 right-1/4 w-96 h-96 bg-yellow-200 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob animation-delay-2000"></div>
-      </div>
+  // 🧼 여기서 스타일 세탁기를 돌립니다!
+  const cleanBodyContent = cleanContentStyles(post.content.rendered);
 
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 pt-12">
+  return (
+    <main className="min-h-screen relative overflow-hidden pb-20 bg-slate-50">
+      <div className="max-w-4xl mx-auto px-5 sm:px-6 lg:px-8 relative z-10 pt-12">
         <Link href="/" className="inline-flex items-center text-sm font-medium text-slate-500 hover:text-orange-600 mb-8 transition-colors">
           ← 목록으로 돌아가기
         </Link>
@@ -110,7 +107,7 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
             </header>
 
             {featuredImage && (
-                <div className="relative w-full max-w-lg mx-auto aspect-square rounded-2xl overflow-hidden shadow-lg mb-12 border border-stone-200">
+                <div className="relative w-full max-w-lg mx-auto aspect-video rounded-2xl overflow-hidden shadow-lg mb-12 border border-stone-200">
                 <Image
                     src={featuredImage} 
                     alt="Featured Image"
@@ -121,93 +118,71 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
                 </div>
             )}
 
-            {/* 👇 여기가 핵심! 모바일 가독성 최적화된 본문 영역 */}
+            {/* 👇 여기가 핵심! 디자인 강제 적용 구역 */}
             <div
                 className="
-                    prose max-w-none text-slate-800 break-words mb-12
-                    prose-p:text-[17px] prose-p:leading-[1.8] prose-p:my-6 prose-p:tracking-[-0.3px]
-                    prose-headings:font-bold prose-headings:break-keep
-                    prose-h2:text-[22px] prose-h2:mt-10 prose-h2:mb-4
-                    prose-h3:text-[19px] prose-h3:mt-8
-                    prose-a:text-orange-600 prose-a:no-underline hover:prose-a:text-orange-800
-                    prose-img:rounded-xl prose-img:shadow-md prose-img:my-8
-                    md:prose-p:text-[18px] md:prose-p:leading-loose
+                    /* 1. 기본 레이아웃 */
+                    prose max-w-none text-slate-800 break-words mb-16
+                    
+                    /* 📱 2. 모바일 가독성 (여기 숫자를 바꾸면 모바일 폰트가 바뀝니다) */
+                    prose-p:text-[18px]        /* 본문 크기 18px (시원하게) */
+                    prose-p:leading-[1.85]     /* 줄간격 1.85배 (널널하게) */
+                    prose-p:tracking-[-0.03em] /* 자간 좁힘 (깔끔하게) */
+                    prose-p:mb-6               /* 문단 간격 */
+                    
+                    /* 🖥️ 3. PC 가독성 */
+                    md:prose-p:text-[19px] 
+                    md:prose-p:leading-[2.0]
+
+                    /* 🎨 4. 소제목 (H2) 디자인: 주황색 밑줄 */
+                    prose-h2:text-[24px] md:prose-h2:text-[28px]
+                    prose-h2:font-extrabold prose-h2:text-slate-900
+                    prose-h2:mt-14 prose-h2:mb-6
+                    prose-h2:border-b-[4px] prose-h2:border-orange-200 prose-h2:pb-2
+                    prose-h2:inline-block prose-h2:w-full
+
+                    /* 🎨 5. 소제목 (H3) 디자인: 왼쪽 주황색 바 */
+                    prose-h3:text-[21px] md:prose-h3:text-[24px]
+                    prose-h3:font-bold prose-h3:text-slate-800
+                    prose-h3:mt-10 prose-h3:mb-4
+                    prose-h3:border-l-[6px] prose-h3:border-orange-500 prose-h3:pl-4
+                    
+                    /* 6. 기타 요소 (링크, 리스트) */
+                    prose-a:text-orange-600 prose-a:font-bold prose-a:no-underline hover:prose-a:text-orange-800 hover:prose-a:bg-orange-50
+                    prose-li:text-[17px] prose-li:leading-relaxed prose-li:my-2
+                    prose-strong:text-orange-700 prose-strong:font-black
+                    prose-img:rounded-2xl prose-img:shadow-md
                 "
-                dangerouslySetInnerHTML={{ __html: post.content.rendered }}
+                // 🧼 세탁된 내용을 넣습니다
+                dangerouslySetInnerHTML={{ __html: cleanBodyContent }}
             />
           </div>
 
-          {/* 👇 하단 내비게이션 (이전글/다음글) */}
+          {/* 하단 내비게이션 */}
           <div className="grid grid-cols-1 md:grid-cols-2 border-t border-stone-100">
-            
-            {/* 1. 이전 글 카드 */}
             {prevPost ? (
-              <Link href={`/tool/${prevPost.id}`} className="group relative h-48 md:h-60 overflow-hidden block w-full">
-                {/* 배경 이미지 */}
-                {getFeaturedImage(prevPost) ? (
-                   <Image 
-                     src={getFeaturedImage(prevPost)} 
-                     alt="이전 글" 
-                     fill 
-                     className="object-cover transition-transform duration-500 group-hover:scale-105"
-                   />
-                ) : (
-                   <div className="w-full h-full bg-slate-800" /> 
-                )}
-                
-                <div className="absolute inset-0 bg-black/50 group-hover:bg-black/60 transition-colors duration-300"></div>
-
-                <div className="absolute top-0 left-0 bg-slate-800/80 text-white text-xs px-4 py-2 font-bold backdrop-blur-sm">
-                  이전글
+              <Link href={`/tool/${prevPost.id}`} className="group relative h-32 md:h-48 overflow-hidden block w-full bg-slate-900">
+                <div className="absolute inset-0 opacity-40 group-hover:opacity-30 transition-opacity">
+                    {getFeaturedImage(prevPost) && <Image src={getFeaturedImage(prevPost)} alt="" fill className="object-cover" />}
                 </div>
-
-                <div className="absolute inset-0 flex items-center justify-center p-8 text-center">
-                    <span className="text-white font-bold text-xl md:text-2xl leading-tight drop-shadow-md group-hover:text-orange-200 transition-colors"
-                          dangerouslySetInnerHTML={{ __html: prevPost.title.rendered }}
-                    />
+                <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center z-10">
+                    <span className="text-orange-400 text-xs font-bold uppercase tracking-wider mb-2">이전 글</span>
+                    <span className="text-white font-bold text-lg md:text-xl line-clamp-2" dangerouslySetInnerHTML={{ __html: prevPost.title.rendered }} />
                 </div>
               </Link>
-            ) : (
-                <div className="hidden md:block bg-slate-50 h-48 md:h-60 relative">
-                    <div className="absolute inset-0 flex items-center justify-center text-slate-300 font-medium">
-                        첫 번째 글입니다
-                    </div>
-                </div>
-            )}
+            ) : <div className="h-32 md:h-48 bg-slate-50" />}
 
-            {/* 2. 다음 글 카드 */}
             {nextPost ? (
-              <Link href={`/tool/${nextPost.id}`} className="group relative h-48 md:h-60 overflow-hidden block w-full border-l border-white/10">
-                {getFeaturedImage(nextPost) ? (
-                   <Image 
-                     src={getFeaturedImage(nextPost)} 
-                     alt="다음 글" 
-                     fill 
-                     className="object-cover transition-transform duration-500 group-hover:scale-105"
-                   />
-                ) : (
-                   <div className="w-full h-full bg-slate-800" />
-                )}
-
-                <div className="absolute inset-0 bg-black/50 group-hover:bg-black/60 transition-colors duration-300"></div>
-
-                <div className="absolute top-0 right-0 bg-slate-800/80 text-white text-xs px-4 py-2 font-bold backdrop-blur-sm">
-                  다음글
+              <Link href={`/tool/${nextPost.id}`} className="group relative h-32 md:h-48 overflow-hidden block w-full bg-slate-900 border-l border-slate-700">
+                 <div className="absolute inset-0 opacity-40 group-hover:opacity-30 transition-opacity">
+                    {getFeaturedImage(nextPost) && <Image src={getFeaturedImage(nextPost)} alt="" fill className="object-cover" />}
                 </div>
-
-                <div className="absolute inset-0 flex items-center justify-center p-8 text-center">
-                    <span className="text-white font-bold text-xl md:text-2xl leading-tight drop-shadow-md group-hover:text-orange-200 transition-colors"
-                          dangerouslySetInnerHTML={{ __html: nextPost.title.rendered }}
-                    />
+                <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center z-10">
+                    <span className="text-orange-400 text-xs font-bold uppercase tracking-wider mb-2">다음 글</span>
+                    <span className="text-white font-bold text-lg md:text-xl line-clamp-2" dangerouslySetInnerHTML={{ __html: nextPost.title.rendered }} />
                 </div>
               </Link>
-            ) : (
-                <div className="hidden md:block bg-slate-50 h-48 md:h-60 relative">
-                    <div className="absolute inset-0 flex items-center justify-center text-slate-300 font-medium">
-                        마지막 글입니다
-                    </div>
-                </div>
-            )}
+            ) : <div className="h-32 md:h-48 bg-slate-50" />}
           </div>
         </article>
       </div>
