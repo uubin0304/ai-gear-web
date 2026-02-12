@@ -1,14 +1,11 @@
-'use client'
-
+import { notFound } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
-import { notFound } from "next/navigation";
-import { useEffect, useState } from "react";
 
 // 🛠️ 1. 특수문자 디코딩 함수
 function decodeHtmlEntity(str: string) {
   if (!str) return "";
-  return str.replace(/&#(\d+);/g, (match, dec) => String.fromCharCode(dec))
+  return str.replace(/&#(\d+);/g, (_match, dec) => String.fromCharCode(dec))
             .replace(/&amp;/g, '&')
             .replace(/&lt;/g, '<')
             .replace(/&gt;/g, '>')
@@ -23,83 +20,71 @@ function getFeaturedImage(post: any) {
   return post?._embedded?.["wp:featuredmedia"]?.[0]?.source_url || null;
 }
 
-// 🛠️ 3. 데이터 가져오기
+// 🛠️ 3. 데이터 가져오기 (서버 사이드 실행)
 async function getPostData(id: string) {
-  const res = await fetch(`https://credivita.com/ai/wp-json/wp/v2/posts/${id}?_embed`, {
-    cache: 'no-store'
-  });
-  
-  if (!res.ok) return null;
-  const post = await res.json();
+  try {
+    // 기본 데이터 가져오기
+    const res = await fetch(`https://credivita.com/ai/wp-json/wp/v2/posts/${id}?_embed`, {
+      cache: 'no-store' // 항상 최신 데이터
+    });
+    
+    if (!res.ok) return null;
+    let post = await res.json();
 
-  const listRes = await fetch(
-    `https://credivita.com/ai/wp-json/wp/v2/posts?per_page=100&_fields=id`, 
-    { cache: 'no-store' }
-  );
-  
-  if (!listRes.ok) return { post, prevPost: null, nextPost: null };
-  
-  const allPosts = await listRes.json();
-  const currentIndex = allPosts.findIndex((p: any) => p.id === parseInt(id));
-  const prevId = currentIndex !== -1 ? allPosts[currentIndex + 1]?.id : null;
-  const nextId = currentIndex !== -1 ? allPosts[currentIndex - 1]?.id : null;
+    // 스타일 복구 로직 (인라인 스타일이 없으면 검색으로 다시 찾기)
+    const hasInlineStyles = post.content.rendered.includes('style="') || post.content.rendered.includes("style='");
+    
+    if (!hasInlineStyles) {
+      try {
+        const cleanTitle = decodeHtmlEntity(post.title.rendered).replace(/<[^>]*>?/gm, '');
+        const searchUrl = `https://credivita.com/ai/wp-json/wp/v2/posts?search=${encodeURIComponent(cleanTitle)}&_embed`;
+        
+        const searchRes = await fetch(searchUrl, { cache: 'no-store' });
+        if (searchRes.ok) {
+          const searchResults = await searchRes.json();
+          const betterPost = searchResults.find((p: any) => p.id === post.id);
+          if (betterPost && betterPost.content.rendered.includes('style="')) {
+             post = betterPost;
+          }
+        }
+      } catch (e) {
+        console.warn("Fallback recovery failed:", e);
+      }
+    }
 
-  const [prevPost, nextPost] = await Promise.all([
-    prevId ? fetch(`https://credivita.com/ai/wp-json/wp/v2/posts/${prevId}?_embed`).then(r => r.ok ? r.json() : null) : null,
-    nextId ? fetch(`https://credivita.com/ai/wp-json/wp/v2/posts/${nextId}?_embed`).then(r => r.ok ? r.json() : null) : null
-  ]);
+    // 이전/다음 글 가져오기
+    const listRes = await fetch(
+      `https://credivita.com/ai/wp-json/wp/v2/posts?per_page=100&_fields=id`, 
+      { cache: 'no-store' }
+    );
+    
+    let prevPost = null;
+    let nextPost = null;
 
-  return { post, prevPost, nextPost };
+    if (listRes.ok) {
+      const allPosts = await listRes.json();
+      const currentIndex = allPosts.findIndex((p: any) => p.id === parseInt(id));
+      
+      const prevId = currentIndex !== -1 ? allPosts[currentIndex + 1]?.id : null;
+      const nextId = currentIndex !== -1 ? allPosts[currentIndex - 1]?.id : null;
+
+      [prevPost, nextPost] = await Promise.all([
+        prevId ? fetch(`https://credivita.com/ai/wp-json/wp/v2/posts/${prevId}?_embed`).then(r => r.ok ? r.json() : null) : null,
+        nextId ? fetch(`https://credivita.com/ai/wp-json/wp/v2/posts/${nextId}?_embed`).then(r => r.ok ? r.json() : null) : null
+      ]);
+    }
+
+    return { post, prevPost, nextPost };
+  } catch (error) {
+    console.error("Fetch error:", error);
+    return null;
+  }
 }
 
-// 🛠️ 4. 메인 페이지 컴포넌트
-export default function Page({ params }: { params: Promise<{ id: string }> }) {
-  const [data, setData] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
-  const [id, setId] = useState<string | null>(null);
-
-  useEffect(() => {
-    params.then((p) => setId(p.id));
-  }, [params]);
-
-  useEffect(() => {
-    if (!id) return;
-    getPostData(id).then((result) => {
-      setData(result);
-      setLoading(false);
-    });
-  }, [id]);
-
-  useEffect(() => {
-    if (!data?.post) return;
-    // 복사 버튼 스크립트 (기존 유지)
-    const buttons = document.querySelectorAll('button[onclick*="clipboard"]');
-    buttons.forEach((btn) => {
-      btn.removeAttribute('onclick');
-      const handleCopy = () => {
-        const preElement = btn.previousElementSibling as HTMLPreElement;
-        const codeElement = preElement?.querySelector('code');
-        const textToCopy = codeElement?.innerText || preElement?.innerText || '';
-        navigator.clipboard.writeText(textToCopy).then(() => {
-            const originalText = btn.textContent;
-            btn.textContent = '✅';
-            setTimeout(() => { btn.textContent = originalText; }, 2000);
-        });
-      };
-      btn.addEventListener('click', handleCopy);
-    });
-  }, [data]);
-
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500 mx-auto mb-4"></div>
-          <p className="text-slate-600">로딩중...</p>
-        </div>
-      </div>
-    );
-  }
+// 🛠️ 4. 메인 페이지 (서버 컴포넌트)
+export default async function Page({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  const data = await getPostData(id);
 
   if (!data || !data.post) return notFound();
 
@@ -108,6 +93,13 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
 
   return (
     <main className="min-h-screen relative overflow-hidden pb-20 bg-slate-50">
+      
+      {/* 배경 블러 효과 */}
+      <div className="absolute top-0 left-0 w-full h-full overflow-hidden -z-10 pointer-events-none">
+        <div className="absolute top-0 left-1/4 w-96 h-96 bg-orange-300 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob"></div>
+        <div className="absolute top-0 right-1/4 w-96 h-96 bg-yellow-200 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob animation-delay-2000"></div>
+      </div>
+
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 pt-12">
         <Link href="/" className="inline-flex items-center text-sm font-medium text-slate-500 hover:text-orange-600 mb-8 transition-colors">
           ← 목록으로 돌아가기
@@ -129,7 +121,7 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
                 </div>
             )}
 
-            {/* 🔥 본문 영역: 클래스 대청소 (충돌 방지) */}
+            {/* 본문 영역 */}
             <div className="wordpress-wrapper">
               <div
                 className="prose prose-slate max-w-none md:prose-lg break-words"
@@ -138,7 +130,7 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
             </div>
           </div>
 
-          {/* 하단 내비게이션 (기존 유지) */}
+          {/* 하단 내비게이션 */}
           <div className="grid grid-cols-1 md:grid-cols-2 border-t border-stone-100 mt-12">
             {prevPost ? (
               <Link href={`/tool/${prevPost.id}`} className="group relative h-40 md:h-48 block w-full border-r border-stone-100">
