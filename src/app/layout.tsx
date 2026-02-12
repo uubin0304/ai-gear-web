@@ -7,7 +7,7 @@ const playfair = Playfair_Display({ subsets: ["latin"], variable: "--font-serif"
 const notoSerifKR = Noto_Serif_KR({ subsets: ["latin"], weight: ["400", "700"], variable: "--font-serif-kr" });
 
 export const metadata: Metadata = {
-  metadataBase: new URL('https://ai-tools.credivita.com'), // 사이트 주소 명시
+  metadataBase: new URL('https://ai-tools.credivita.com'),
   title: {
     default: "AI Gear - 실전 압축 AI 툴 디렉토리",
     template: "%s | AI Gear",
@@ -20,7 +20,7 @@ export const metadata: Metadata = {
     siteName: "AI Gear",
     images: [
       {
-        url: "/og-image.jpg", // public 폴더에 넣은 이미지 이름
+        url: "/og-image.jpg",
         width: 1200,
         height: 630,
       },
@@ -44,9 +44,10 @@ export default function RootLayout({
           src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7040793716815812"
           crossOrigin="anonymous"
         ></script>
+        {/* 🔥 수정됨: 메타 태그는 반드시 head 안에 있어야 합니다 */}
+        <meta name="google-site-verification" content="OpG3PDf9LT1cuS6t6t5v07uXaYl2_CtV2o2VbLKnxiE" />
+        <meta name="naver-site-verification" content="7bdda18d7419a1e28d120b1f033c0dc570147c60" />
       </head>
-      <meta name="google-site-verification" content="OpG3PDf9LT1cuS6t6t5v07uXaYl2_CtV2o2VbLKnxiE" />
-      <meta name="naver-site-verification" content="7bdda18d7419a1e28d120b1f033c0dc570147c60" />
       <body className={`${inter.variable} ${playfair.variable} ${notoSerifKR.variable} antialiased bg-slate-50 text-slate-900 font-sans`}>
         {children}
       </body>
