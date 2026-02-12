@@ -1,20 +1,20 @@
-// next.config.js
-/** @type {import('next').NextConfig} */
-const nextConfig = {
+import type { NextConfig } from "next";
+
+const nextConfig: NextConfig = {
   images: {
     remotePatterns: [
+      // 1. 워드프레스 이미지 (메인)
       {
-        protocol: 'https',
-        hostname: 'credivita.com',
-        pathname: '/ai/wp-content/uploads/**', // 특정 경로만 허용
+        protocol: "https",
+        hostname: "credivita.com",
       },
+      // 2. www 붙은 주소 대비
       {
-        protocol: 'https',
-        hostname: 'ai.credivita.com',
-        pathname: '/wp-content/uploads/**',
+        protocol: "https",
+        hostname: "www.credivita.com",
       },
     ],
   },
 };
 
-module.exports = nextConfig;
+export default nextConfig;

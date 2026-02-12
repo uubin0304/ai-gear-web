@@ -1,157 +1,177 @@
-import { notFound } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 
-// 🛠️ 1. 특수문자 디코딩 함수
-function decodeHtmlEntity(str: string) {
-  if (!str) return "";
-  return str.replace(/&#(\d+);/g, (_match, dec) => String.fromCharCode(dec))
-            .replace(/&amp;/g, '&')
-            .replace(/&lt;/g, '<')
-            .replace(/&gt;/g, '>')
-            .replace(/&quot;/g, '"')
-            .replace(/&#039;/g, "'")
-            .replace(/&#8217;/g, "'")
-            .replace(/&#8216;/g, "'");
+// 카테고리 목록
+const AI_CATEGORIES = [
+  { name: "🏠 전체", id: null, slug: "all" },
+  { name: "🛠️ 가이드", id: 14, slug: "guide" },
+  { name: "🆕 소식", id: 15, slug: "news" },
+  { name: "🔍 툴 소개", id: 16, slug: "tools" },
+  { name: "🎁 프로모션", id: 17, slug: "promo" },
+  { name: "📂 기타", id: 1, slug: "etc" },
+];
+
+interface Tool {
+  id: number;
+  title: string;
+  description: string;
+  image: string;
+  category: string;
 }
 
-// 🛠️ 2. 이미지 URL 추출 헬퍼 함수
-function getFeaturedImage(post: any) {
-  return post?._embedded?.["wp:featuredmedia"]?.[0]?.source_url || null;
+// HTML 태그 제거 함수
+function stripHtml(html: string) {
+  return html.replace(/<[^>]*>?/gm, "").replace(/&[^;]+;/gm, " ").trim();
 }
 
-// 🛠️ 3. 데이터 가져오기 (서버 사이드 실행)
-async function getPostData(id: string) {
+async function getPosts(categoryId?: string): Promise<Tool[]> {
   try {
-    // 기본 데이터 가져오기
-    const res = await fetch(`https://credivita.com/ai/wp-json/wp/v2/posts/${id}?_embed`, {
-      cache: 'no-store' // 항상 최신 데이터
-    });
+    const categoryQuery = categoryId ? `&categories=${categoryId}` : "";
     
-    if (!res.ok) return null;
-    let post = await res.json();
-
-    // 스타일 복구 로직 (인라인 스타일이 없으면 검색으로 다시 찾기)
-    const hasInlineStyles = post.content.rendered.includes('style="') || post.content.rendered.includes("style='");
-    
-    if (!hasInlineStyles) {
-      try {
-        const cleanTitle = decodeHtmlEntity(post.title.rendered).replace(/<[^>]*>?/gm, '');
-        const searchUrl = `https://credivita.com/ai/wp-json/wp/v2/posts?search=${encodeURIComponent(cleanTitle)}&_embed`;
-        
-        const searchRes = await fetch(searchUrl, { cache: 'no-store' });
-        if (searchRes.ok) {
-          const searchResults = await searchRes.json();
-          const betterPost = searchResults.find((p: any) => p.id === post.id);
-          if (betterPost && betterPost.content.rendered.includes('style="')) {
-             post = betterPost;
-          }
-        }
-      } catch (e) {
-        console.warn("Fallback recovery failed:", e);
-      }
-    }
-
-    // 이전/다음 글 가져오기
-    const listRes = await fetch(
-      `https://credivita.com/ai/wp-json/wp/v2/posts?per_page=100&_fields=id`, 
-      { cache: 'no-store' }
+    const res = await fetch(
+      `https://credivita.com/ai/wp-json/wp/v2/posts?_embed${categoryQuery}`,
+      { next: { revalidate: 60 } } 
     );
+
+    if (!res.ok) return []; 
     
-    let prevPost = null;
-    let nextPost = null;
+    const data = await res.json();
 
-    if (listRes.ok) {
-      const allPosts = await listRes.json();
-      const currentIndex = allPosts.findIndex((p: any) => p.id === parseInt(id));
-      
-      const prevId = currentIndex !== -1 ? allPosts[currentIndex + 1]?.id : null;
-      const nextId = currentIndex !== -1 ? allPosts[currentIndex - 1]?.id : null;
+    // 🔥 [핵심 수정] 받아온 데이터를 Tool 형식으로 깨끗하게 가공합니다.
+    const tools: Tool[] = data.map((post: any) => {
+      // 1. 썸네일 이미지 추출 (없으면 기본 이미지)
+      const imageUrl = 
+        post._embedded?.['wp:featuredmedia']?.[0]?.source_url || 
+        "https://via.placeholder.com/600x400?text=No+Image"; // 대체 이미지
 
-      [prevPost, nextPost] = await Promise.all([
-        prevId ? fetch(`https://credivita.com/ai/wp-json/wp/v2/posts/${prevId}?_embed`).then(r => r.ok ? r.json() : null) : null,
-        nextId ? fetch(`https://credivita.com/ai/wp-json/wp/v2/posts/${nextId}?_embed`).then(r => r.ok ? r.json() : null) : null
-      ]);
-    }
+      // 2. 카테고리 이름 추출 (첫 번째 카테고리 사용)
+      const categoryName = 
+        post._embedded?.['wp:term']?.[0]?.[0]?.name || "AI";
 
-    return { post, prevPost, nextPost };
+      return {
+        id: post.id,
+        // 워드프레스는 title.rendered에 실제 제목이 들어있습니다.
+        title: post.title.rendered, 
+        // excerpt.rendered에 요약글이 들어있고, HTML 태그를 제거해줍니다.
+        description: stripHtml(post.excerpt?.rendered || ""), 
+        image: imageUrl,
+        category: categoryName,
+      };
+    });
+
+    return tools;
+
   } catch (error) {
-    console.error("Fetch error:", error);
-    return null;
+    console.error("데이터 가져오기 실패:", error);
+    return [];
   }
 }
 
-// 🛠️ 4. 메인 페이지 (서버 컴포넌트)
-export default async function Page({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = await params;
-  const data = await getPostData(id);
-
-  if (!data || !data.post) return notFound();
-
-  const { post, prevPost, nextPost } = data;
-  const featuredImage = getFeaturedImage(post);
+export default async function Home({ searchParams }: { searchParams: { category?: string } }) {
+  // Next.js 15+ 에서는 searchParams를 await 해야 할 수 있습니다. (버전에 따라 다름)
+  const params = await searchParams; // Next.js 버전에 따라 await가 필요 없을 수도 있음
+  const currentCategoryId = params?.category;
+  const tools = await getPosts(currentCategoryId);
 
   return (
-    <main className="min-h-screen relative overflow-hidden pb-20 bg-slate-50">
+    <main className="min-h-screen relative overflow-hidden">
       
-      {/* 배경 블러 효과 */}
+      {/* 🟠 1. 배경 오로라 효과 */}
       <div className="absolute top-0 left-0 w-full h-full overflow-hidden -z-10 pointer-events-none">
         <div className="absolute top-0 left-1/4 w-96 h-96 bg-orange-300 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob"></div>
         <div className="absolute top-0 right-1/4 w-96 h-96 bg-yellow-200 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob animation-delay-2000"></div>
+        <div className="absolute -bottom-32 left-1/3 w-96 h-96 bg-pink-300 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob animation-delay-4000"></div>
       </div>
 
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 pt-12">
-        <Link href="/" className="inline-flex items-center text-sm font-medium text-slate-500 hover:text-orange-600 mb-8 transition-colors">
-          ← 목록으로 돌아가기
-        </Link>
-
-        <article className="bg-white rounded-3xl overflow-hidden shadow-sm border border-stone-100 mb-16">
-          <div className="p-6 md:p-12 pb-0">
-            <header className="mb-10 text-center">
-                <h1 className="text-2xl md:text-4xl font-extrabold text-slate-900 mb-4 leading-tight break-keep" 
-                    dangerouslySetInnerHTML={{ __html: post.title.rendered }} />
-                <time className="text-slate-400 text-sm">
-                {new Date(post.date).toLocaleDateString()}
-                </time>
-            </header>
-
-            {featuredImage && (
-                <div className="relative w-full aspect-video rounded-xl overflow-hidden shadow-md mb-10 border border-stone-200">
-                <Image src={featuredImage} alt="Featured" fill className="object-cover" priority />
-                </div>
-            )}
-
-            {/* 본문 영역 */}
-            <div className="wordpress-wrapper">
-              <div
-                className="prose prose-slate max-w-none md:prose-lg break-words"
-                dangerouslySetInnerHTML={{ __html: post.content.rendered }}
-              />
-            </div>
+      <section className="relative pt-24 pb-16 px-4">
+        <div className="max-w-7xl mx-auto text-center relative z-10">
+          
+          {/* 🟠 2. 상단 뱃지 */}
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-orange-50 border border-orange-100 text-orange-600 text-xs font-bold mb-8 shadow-sm">
+            <span className="relative flex h-2 w-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-orange-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-orange-500"></span>
+            </span>
+            실시간 업데이트 중
           </div>
 
-          {/* 하단 내비게이션 */}
-          <div className="grid grid-cols-1 md:grid-cols-2 border-t border-stone-100 mt-12">
-            {prevPost ? (
-              <Link href={`/tool/${prevPost.id}`} className="group relative h-40 md:h-48 block w-full border-r border-stone-100">
-                 <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center bg-white hover:bg-slate-50 transition-colors">
-                    <span className="text-xs font-bold text-slate-400 mb-2 uppercase tracking-wider">Previous</span>
-                    <span className="text-slate-800 font-bold leading-tight line-clamp-2" dangerouslySetInnerHTML={{ __html: prevPost.title.rendered }} />
-                </div>
-              </Link>
-            ) : <div className="h-40 md:h-48 bg-slate-50" />}
+          {/* 🟠 3. 메인 타이틀 */}
+          <h1 className="text-5xl md:text-7xl font-extrabold text-slate-900 mb-8 tracking-tight leading-tight cursor-default">
+            AI 툴, <br className="md:hidden" />
+            <span className="inline-block animate-float text-gradient-sun pb-2 drop-shadow-sm text-transparent bg-clip-text bg-gradient-to-r from-orange-400 to-amber-600">
+              고민 말고 여기서.
+            </span>
+          </h1>
+          
+          <p className="text-lg text-slate-600 mb-12 max-w-2xl mx-auto leading-relaxed">
+            복잡한 검색은 이제 그만. <br className="md:hidden" />
+            엄선된 AI 도구와 가이드로 생산성을 200% 높여보세요.
+          </p>
+          
+          {/* 🟠 4. 카테고리 탭 */}
+          <div className="flex items-center justify-start md:justify-center gap-3 overflow-x-auto pb-6 pt-2 px-4 no-scrollbar scroll-smooth">
+            {AI_CATEGORIES.map((cat) => {
+              // category 파라미터가 없을 때 '전체'가 활성화되도록 로직 수정
+              const isAll = cat.id === null && !currentCategoryId;
+              const isSelected = currentCategoryId === cat.id?.toString();
+              const isActive = isAll || isSelected;
 
-            {nextPost ? (
-              <Link href={`/tool/${nextPost.id}`} className="group relative h-40 md:h-48 block w-full">
-                 <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center bg-white hover:bg-slate-50 transition-colors">
-                    <span className="text-xs font-bold text-slate-400 mb-2 uppercase tracking-wider">Next</span>
-                    <span className="text-slate-800 font-bold leading-tight line-clamp-2" dangerouslySetInnerHTML={{ __html: nextPost.title.rendered }} />
+              return (
+                <Link
+                  key={cat.slug}
+                  href={cat.id ? `/?category=${cat.id}` : "/"}
+                  className={`
+                    relative px-6 py-3 rounded-2xl text-sm font-bold whitespace-nowrap transition-all duration-300 ease-out border backdrop-blur-md
+                    ${isActive 
+                      ? "bg-orange-500 border-orange-500 text-white shadow-lg shadow-orange-500/30 scale-105" 
+                      : "bg-white/60 border-white/50 text-slate-600 hover:bg-white hover:border-orange-300 hover:text-orange-600 hover:shadow-md hover:-translate-y-1"
+                    }
+                  `}
+                >
+                  <span className="flex items-center gap-2">
+                    <span className="text-base">{cat.name.split(" ")[0]}</span>
+                    <span>{cat.name.split(" ")[1]}</span>
+                  </span>
+                </Link>
+              );
+            })}
+          </div>
+        </div>
+      </section>
+
+      {/* 리스트 섹션 */}
+      <section className="max-w-7xl mx-auto px-4 pb-24">
+        {tools.length === 0 ? (
+          <div className="text-center py-20 bg-white/50 backdrop-blur-sm rounded-3xl border border-dashed border-orange-200">
+            <p className="text-xl text-slate-600 font-medium mb-2">아직 등록된 글이 없거나 불러오는 중입니다! 😅</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            {tools.map((tool) => (
+              <Link key={tool.id} href={`/tool/${tool.id}`} className="group relative bg-white rounded-2xl overflow-hidden border border-stone-100 hover:border-orange-400 hover:shadow-xl hover:shadow-orange-100 transition-all duration-300 flex flex-col h-full hover:-translate-y-1">
+                <div className="relative aspect-square w-full overflow-hidden bg-stone-100">
+                  {/* 이미지가 유효한지 확인 필요, 외부 이미지 도메인 next.config.js 설정 필요 */}
+                  <Image src={tool.image} alt={tool.title} fill className="object-cover group-hover:scale-105 transition-transform duration-500" />
+                  <div className="absolute top-3 left-3">
+                    <span className="px-2.5 py-1 text-[10px] font-bold text-white bg-black/40 backdrop-blur-md rounded-full border border-white/10 uppercase tracking-wider">
+                      {tool.category}
+                    </span>
+                  </div>
+                </div>
+                <div className="p-5 flex flex-col flex-grow">
+                  <h3 
+                    className="font-bold text-slate-900 mb-2 line-clamp-1 group-hover:text-orange-600 text-lg transition-colors"
+                    dangerouslySetInnerHTML={{ __html: tool.title }} 
+                  />
+                  <p className="text-slate-500 text-sm line-clamp-2 mb-4 leading-relaxed flex-grow">
+                    {tool.description}
+                  </p>
                 </div>
               </Link>
-            ) : <div className="h-40 md:h-48 bg-slate-50" />}
+            ))}
           </div>
-        </article>
-      </div>
+        )}
+      </section>
     </main>
   );
 }
