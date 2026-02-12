@@ -25,9 +25,11 @@ function getFeaturedImage(post: any) {
 
 // 🛠️ 3. 데이터 가져오기
 async function getPostData(id: string) {
+  // 🔥 여기 수정! fetch( 괄호 추가
   const res = await fetch(`https://credivita.com/ai/wp-json/wp/v2/posts/${id}?_embed`, {
     cache: 'no-store'
   });
+  
   if (!res.ok) return null;
   const post = await res.json();
 
@@ -43,6 +45,7 @@ async function getPostData(id: string) {
   const prevId = currentIndex !== -1 ? allPosts[currentIndex + 1]?.id : null;
   const nextId = currentIndex !== -1 ? allPosts[currentIndex - 1]?.id : null;
 
+  // 🔥 여기도 수정! fetch( 괄호 추가
   const [prevPost, nextPost] = await Promise.all([
     prevId ? fetch(`https://credivita.com/ai/wp-json/wp/v2/posts/${prevId}?_embed`).then(r => r.ok ? r.json() : null) : null,
     nextId ? fetch(`https://credivita.com/ai/wp-json/wp/v2/posts/${nextId}?_embed`).then(r => r.ok ? r.json() : null) : null
@@ -52,16 +55,24 @@ async function getPostData(id: string) {
 }
 
 // 🛠️ 4. 메인 페이지 컴포넌트
-export default function Page({ params }: { params: { id: string } }) {
+export default function Page({ params }: { params: Promise<{ id: string }> }) {
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [id, setId] = useState<string | null>(null);
 
+  // params를 먼저 풀기
   useEffect(() => {
-    getPostData(params.id).then((result) => {
+    params.then((p) => setId(p.id));
+  }, [params]);
+
+  // id가 준비되면 데이터 가져오기
+  useEffect(() => {
+    if (!id) return;
+    getPostData(id).then((result) => {
       setData(result);
       setLoading(false);
     });
-  }, [params.id]);
+  }, [id]);
 
   // 🔥 복사 버튼 활성화
   useEffect(() => {
@@ -73,7 +84,6 @@ export default function Page({ params }: { params: { id: string } }) {
       btn.removeAttribute('onclick');
       
       const handleCopy = () => {
-        // pre 태그 찾기
         const preElement = btn.previousElementSibling as HTMLPreElement;
         const codeElement = preElement?.querySelector('code');
         const textToCopy = codeElement?.innerText || preElement?.innerText || '';
@@ -191,12 +201,13 @@ export default function Page({ params }: { params: { id: string } }) {
 
           {/* 하단 내비게이션 */}
           <div className="grid grid-cols-1 md:grid-cols-2 border-t border-stone-100">
+            
             {/* 이전글 */}
             {prevPost ? (
               <Link href={`/tool/${prevPost.id}`} className="group relative h-48 md:h-60 overflow-hidden block w-full">
                 {getFeaturedImage(prevPost) ? (
                    <Image 
-                     src={getFeaturedImage(prevPost)} 
+                     src={getFeaturedImage(prevPost)!} 
                      alt="이전 글" 
                      fill 
                      className="object-cover transition-transform duration-500 group-hover:scale-105"
@@ -230,7 +241,7 @@ export default function Page({ params }: { params: { id: string } }) {
               <Link href={`/tool/${nextPost.id}`} className="group relative h-48 md:h-60 overflow-hidden block w-full border-l border-white/10">
                 {getFeaturedImage(nextPost) ? (
                    <Image 
-                     src={getFeaturedImage(nextPost)} 
+                     src={getFeaturedImage(nextPost)!} 
                      alt="다음 글" 
                      fill 
                      className="object-cover transition-transform duration-500 group-hover:scale-105"
