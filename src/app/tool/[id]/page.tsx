@@ -16,18 +16,23 @@ function decodeHtmlEntity(str: string) {
             .replace(/&#8216;/g, "'");
 }
 
-// 🧹 정밀 세탁 함수: 레이아웃 디자인은 살리고 폰트/너비만 초기화
+// 🧼 PC/모바일 레이아웃 붕괴 방지용 정밀 세탁기
 function cleanContentStyles(content: string) {
   if (!content) return "";
   return content
-    // 1. 폰트 크기, 줄간격, 폰트 패밀리만 골라서 삭제 (디자인 박스는 유지)
-    .replace(/font-size:[^;"]+;?/g, "") 
+    // 1. 폰트/줄간격/너비 고정 해제 (가독성 해결)
+    .replace(/font-size:[^;"]+;?/g, "")
     .replace(/line-height:[^;"]+;?/g, "")
     .replace(/font-family:[^;"]+;?/g, "")
-    // 2. 고정된 너비(px단위)를 제거하여 모바일에서 삐져나가지 않게 함
-    .replace(/width:\s*\d+px;?/g, "width:100%;")
-    .replace(/max-width:\s*\d+px;?/g, "max-width:100%;")
-    // 3. (선택사항) 굳이 안지워도 되는 배경색(background) 등은 그대로 둡니다.
+    
+    // 2. 버튼이나 박스가 PC에서 찌그러지는 주범(고정 width, flex 관련) 제거
+    .replace(/display:\s*inline-flex;?/g, "display: flex;") // 강제 정렬 유도
+    .replace(/max-width:[^;"]+;?/g, "max-width: 100%;")
+    .replace(/width:\s*\d+px;?/g, "width: 100%;")
+    
+    // 3. 버튼 글자 쏠림 방지 (정렬 초기화)
+    .replace(/justify-content:[^;"]+;?/g, "justify-content: center;")
+    .replace(/align-items:[^;"]+;?/g, "align-items: center;");
 }
 
 // 🛠️ 3. 이미지 URL 추출 함수
