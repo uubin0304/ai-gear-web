@@ -72,38 +72,3 @@
 .toc_container, #ez-toc-container, .lwptoc, .ez-toc-v2_0_69 {
   display: none !important;
 }
-/* Next.js 프로젝트의 globals.css 맨 아래에 추가 */
-
-/* 1. 워드프레스에서 넘어오는 blockquote와 info-box 스타일링 (모바일 최적화 수정됨) */
-.prose blockquote, 
-.prose .info-box {
-    background-color: #f8fafc !important;
-    border-left: 4px solid #f97316 !important;
-    padding: 16px 20px !important; /* 👈 기존 25px에서 줄임 (모바일 공간 확보) */
-    border-radius: 12px !important;
-    color: #475569 !important;
-    line-height: 1.6; 
-    margin: 24px 0;
-    font-style: normal !important;
-    font-size: 0.95em;
-    border-top: none;
-    border-right: none;
-    border-bottom: none;
-}
-
-/* 2. 본문 내 모든 code 태그 강조 (사진 스타일) */
-.prose code {
-    background-color: #e2e8f0 !important;
-    color: #1e293b !important;
-    padding: 2px 6px !important;
-    border-radius: 6px !important;
-    font-family: 'Courier New', Courier, monospace !important;
-    font-size: 0.9em !important;
-    font-weight: 500 !important;
-}
-
-/* 3. Next.js의 Tailwind CSS 기본 backtick(`) 제거 (선택사항) */
-.prose code::before,
-.prose code::after {
-    content: "" !important;
-}
