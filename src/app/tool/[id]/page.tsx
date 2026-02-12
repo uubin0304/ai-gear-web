@@ -1,7 +1,9 @@
+'use client'
+
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { Metadata } from "next";
+import { useEffect, useState } from "react";
 
 // 🛠️ 1. 특수문자 디코딩 함수
 function decodeHtmlEntity(str: string) {
@@ -23,32 +25,24 @@ function getFeaturedImage(post: any) {
 
 // 🛠️ 3. 데이터 가져오기
 async function getPostData(id: string) {
-  // (1) 현재 글 가져오기
   const res = await fetch(`https://credivita.com/ai/wp-json/wp/v2/posts/${id}?_embed`, {
-    next: { revalidate: 60 }
+    cache: 'no-store'
   });
   if (!res.ok) return null;
   const post = await res.json();
 
-  // (2) 전체 글 ID 목록 가져오기 (가볍게)
   const listRes = await fetch(
     `https://credivita.com/ai/wp-json/wp/v2/posts?per_page=100&_fields=id`, 
-    { next: { revalidate: 60 } }
+    { cache: 'no-store' }
   );
   
-  // 목록 가져오기 실패 시 현재 글만 반환
   if (!listRes.ok) return { post, prevPost: null, nextPost: null };
   
   const allPosts = await listRes.json();
-  
-  // (3) 현재 글 위치 찾기
   const currentIndex = allPosts.findIndex((p: any) => p.id === parseInt(id));
-  
-  // (4) 이전글/다음글 ID 추출
   const prevId = currentIndex !== -1 ? allPosts[currentIndex + 1]?.id : null;
   const nextId = currentIndex !== -1 ? allPosts[currentIndex - 1]?.id : null;
 
-  // (5) 이전글/다음글 상세 정보 병렬로 가져오기
   const [prevPost, nextPost] = await Promise.all([
     prevId ? fetch(`https://credivita.com/ai/wp-json/wp/v2/posts/${prevId}?_embed`).then(r => r.ok ? r.json() : null) : null,
     nextId ? fetch(`https://credivita.com/ai/wp-json/wp/v2/posts/${nextId}?_embed`).then(r => r.ok ? r.json() : null) : null
@@ -57,28 +51,63 @@ async function getPostData(id: string) {
   return { post, prevPost, nextPost };
 }
 
-// 🛠️ 4. 메타데이터 생성 (SEO)
-export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
-  const { id } = await params;
-  const data = await getPostData(id);
-  if (!data || !data.post) return { title: "페이지를 찾을 수 없음" };
+// 🛠️ 4. 메인 페이지 컴포넌트
+export default function Page({ params }: { params: { id: string } }) {
+  const [data, setData] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
 
-  const title = decodeHtmlEntity(data.post.title.rendered);
-  const ogImage = getFeaturedImage(data.post);
+  useEffect(() => {
+    getPostData(params.id).then((result) => {
+      setData(result);
+      setLoading(false);
+    });
+  }, [params.id]);
 
-  return {
-    title: `${title} | Credivita AI`,
-    openGraph: {
-      title: title,
-      images: ogImage ? [{ url: ogImage }] : [],
-    },
-  };
-}
+  // 🔥 복사 버튼 활성화
+  useEffect(() => {
+    if (!data?.post) return;
 
-// 🛠️ 5. 메인 페이지 컴포넌트
-export default async function Page({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = await params;
-  const data = await getPostData(id);
+    const buttons = document.querySelectorAll('button[onclick*="clipboard"]');
+    
+    buttons.forEach((btn) => {
+      btn.removeAttribute('onclick');
+      
+      const handleCopy = () => {
+        // pre 태그 찾기
+        const preElement = btn.previousElementSibling as HTMLPreElement;
+        const codeElement = preElement?.querySelector('code');
+        const textToCopy = codeElement?.innerText || preElement?.innerText || '';
+        
+        navigator.clipboard.writeText(textToCopy).then(() => {
+          const originalText = btn.textContent;
+          btn.textContent = '✅ 복사 완료!';
+          btn.classList.add('bg-green-500');
+          
+          setTimeout(() => {
+            btn.textContent = originalText;
+            btn.classList.remove('bg-green-500');
+            btn.classList.add('bg-blue-500');
+          }, 2000);
+        }).catch(err => {
+          console.error('복사 실패:', err);
+          btn.textContent = '❌ 복사 실패';
+        });
+      };
+
+      btn.addEventListener('click', handleCopy);
+    });
+  }, [data]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500 mx-auto mb-4"></div>
+          <p className="text-slate-600">로딩중...</p>
+        </div>
+      </div>
+    );
+  }
 
   if (!data || !data.post) return notFound();
 
@@ -121,7 +150,7 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
                 </div>
             )}
 
-            {/* 🔥 본문 영역 - WordPress 스타일 완전 보호 */}
+            {/* 🔥 본문 영역 */}
             <div className="wordpress-wrapper">
               <div
                 className="
@@ -160,13 +189,11 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
             </div>
           </div>
 
-          {/* 👇 하단 내비게이션 (이전글/다음글) */}
+          {/* 하단 내비게이션 */}
           <div className="grid grid-cols-1 md:grid-cols-2 border-t border-stone-100">
-            
-            {/* 1. 이전 글 카드 */}
+            {/* 이전글 */}
             {prevPost ? (
               <Link href={`/tool/${prevPost.id}`} className="group relative h-48 md:h-60 overflow-hidden block w-full">
-                {/* 배경 이미지 */}
                 {getFeaturedImage(prevPost) ? (
                    <Image 
                      src={getFeaturedImage(prevPost)} 
@@ -198,7 +225,7 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
                 </div>
             )}
 
-            {/* 2. 다음 글 카드 */}
+            {/* 다음글 */}
             {nextPost ? (
               <Link href={`/tool/${nextPost.id}`} className="group relative h-48 md:h-60 overflow-hidden block w-full border-l border-white/10">
                 {getFeaturedImage(nextPost) ? (
