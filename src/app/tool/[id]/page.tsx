@@ -121,20 +121,43 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
                 </div>
             )}
 
-            {/* 👇 여기가 핵심! 모바일 가독성 최적화된 본문 영역 */}
-            <div
+            {/* 🔥 본문 영역 - WordPress 스타일 완전 보호 */}
+            <div className="wordpress-wrapper">
+              <div
                 className="
-                    prose max-w-none text-slate-800 break-words mb-12
-                    prose-p:text-[17px] prose-p:leading-[1.8] prose-p:my-6 prose-p:tracking-[-0.3px]
-                    prose-headings:font-bold prose-headings:break-keep
-                    prose-h2:text-[22px] prose-h2:mt-10 prose-h2:mb-4
-                    prose-h3:text-[19px] prose-h3:mt-8
-                    prose-a:text-orange-600 prose-a:no-underline hover:prose-a:text-orange-800
-                    prose-img:rounded-xl prose-img:shadow-md prose-img:my-8
-                    md:prose-p:text-[18px] md:prose-p:leading-loose
+                  prose prose-lg max-w-none 
+                  break-words mb-12
+                  
+                  prose-p:text-base prose-p:leading-relaxed prose-p:my-4 prose-p:text-slate-700
+                  
+                  prose-headings:font-bold prose-headings:break-keep prose-headings:text-slate-900
+                  prose-h2:text-2xl prose-h2:mt-12 prose-h2:mb-6 prose-h2:border-b prose-h2:border-slate-200 prose-h2:pb-3
+                  prose-h3:text-xl prose-h3:mt-8 prose-h3:mb-4
+                  
+                  prose-a:text-orange-600 prose-a:no-underline prose-a:font-medium hover:prose-a:text-orange-700 hover:prose-a:underline
+                  
+                  prose-img:rounded-xl prose-img:shadow-lg prose-img:my-8 prose-img:w-full
+                  
+                  prose-ul:my-6 prose-ul:pl-6
+                  prose-ol:my-6 prose-ol:pl-6
+                  prose-li:my-2 prose-li:text-slate-700
+                  
+                  prose-blockquote:border-l-4 prose-blockquote:border-orange-500 prose-blockquote:bg-slate-50 prose-blockquote:py-4 prose-blockquote:px-6 prose-blockquote:my-6
+                  
+                  prose-pre:bg-slate-900 prose-pre:text-slate-100 prose-pre:p-6 prose-pre:rounded-lg prose-pre:overflow-x-auto prose-pre:my-6
+                  prose-code:text-slate-900 prose-code:bg-slate-100 prose-code:px-2 prose-code:py-1 prose-code:rounded prose-code:text-sm
+                  
+                  prose-table:w-full prose-table:border-collapse prose-table:my-8 prose-table:shadow-md
+                  prose-thead:bg-blue-500
+                  prose-th:text-white prose-th:font-bold prose-th:p-4 prose-th:text-left prose-th:border prose-th:border-slate-300
+                  prose-td:p-3 prose-td:border prose-td:border-slate-200 prose-td:text-slate-700
+                  prose-tr:even:bg-slate-50
+                  
+                  md:prose-xl
                 "
                 dangerouslySetInnerHTML={{ __html: post.content.rendered }}
-            />
+              />
+            </div>
           </div>
 
           {/* 👇 하단 내비게이션 (이전글/다음글) */}
