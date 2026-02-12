@@ -107,3 +107,232 @@
 .prose code::after {
     content: "" !important;
 }
+/* ============================================
+   🔥 WordPress 콘텐츠 스타일 완전 보호
+   ============================================ */
+
+/* 4. WordPress 인라인 스타일 최우선 적용 */
+.prose [style] {
+  all: revert-layer !important;
+}
+
+/* 5. Pre/Code 블록 완전 재정의 */
+.prose pre {
+  background: #1f2937 !important;
+  color: #f3f4f6 !important;
+  padding: 20px !important;
+  border-radius: 8px !important;
+  font-size: 14px !important;
+  line-height: 1.6 !important;
+  overflow-x: auto !important;
+  margin: 30px 0 !important;
+  position: relative !important;
+  font-family: 'Courier New', Courier, monospace !important;
+}
+
+.prose pre code {
+  background: transparent !important;
+  color: #f3f4f6 !important;
+  padding: 0 !important;
+  border-radius: 0 !important;
+  font-size: inherit !important;
+}
+
+/* 6. 복사 버튼 스타일 */
+.prose pre + button,
+.prose button[onclick*="clipboard"] {
+  position: absolute !important;
+  top: 10px !important;
+  right: 10px !important;
+  padding: 8px 16px !important;
+  background: #3b82f6 !important;
+  color: #ffffff !important;
+  border: none !important;
+  border-radius: 6px !important;
+  cursor: pointer !important;
+  font-size: 13px !important;
+  z-index: 10 !important;
+  font-family: var(--font-sans) !important;
+}
+
+.prose button[onclick*="clipboard"]:hover {
+  background: #2563eb !important;
+}
+
+/* 7. 제목 스타일 강제 */
+.prose h2 {
+  font-size: 28px !important;
+  color: #1f2937 !important;
+  margin: 50px 0 20px 0 !important;
+  padding-bottom: 10px !important;
+  border-bottom: 2px solid #e5e7eb !important;
+  font-weight: 700 !important;
+  line-height: 1.3 !important;
+}
+
+.prose h3 {
+  font-size: 22px !important;
+  color: #111827 !important;
+  margin: 30px 0 15px 0 !important;
+  font-weight: 700 !important;
+  line-height: 1.4 !important;
+}
+
+/* 8. 본문 텍스트 */
+.prose p {
+  font-size: 16px !important;
+  line-height: 1.9 !important;
+  color: #374151 !important;
+  margin: 16px 0 !important;
+}
+
+/* 9. 리스트 스타일 */
+.prose ul,
+.prose ol {
+  margin: 20px 0 !important;
+  padding-left: 20px !important;
+  color: #374151 !important;
+  line-height: 1.85 !important;
+}
+
+.prose li {
+  font-size: 16px !important;
+  color: #374151 !important;
+  margin: 8px 0 !important;
+}
+
+/* 10. 테이블 스타일 */
+.prose table {
+  min-width: 600px !important;
+  width: 100% !important;
+  border-collapse: collapse !important;
+  background: #ffffff !important;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1) !important;
+  margin: 40px 0 !important;
+}
+
+.prose thead {
+  background: #3b82f6 !important;
+  color: #ffffff !important;
+}
+
+.prose th {
+  padding: 15px !important;
+  text-align: left !important;
+  border: 1px solid #e5e7eb !important;
+  font-size: 14px !important;
+  font-weight: 700 !important;
+  color: #ffffff !important;
+}
+
+.prose td {
+  padding: 12px !important;
+  border: 1px solid #e5e7eb !important;
+  font-size: 14px !important;
+  color: #1f2937 !important;
+}
+
+/* 11. 테이블 반응형 래퍼 */
+.prose div[style*="overflow-x: auto"] {
+  overflow-x: auto !important;
+  -webkit-overflow-scrolling: touch !important;
+  margin: 40px 0 !important;
+}
+
+/* 12. 박스형 콘텐츠 보호 */
+.prose div[style*="border-left"],
+.prose div[style*="background"] {
+  all: revert-layer !important;
+}
+
+/* 13. 이미지 스타일 */
+.prose img {
+  width: 100% !important;
+  height: auto !important;
+  border-radius: 12px !important;
+  margin: 20px 0 !important;
+  display: block !important;
+}
+
+.prose figure {
+  margin: 20px 0 !important;
+}
+
+.prose .wp-block-image {
+  margin: 20px 0 !important;
+}
+
+/* 14. CTA 버튼 보호 */
+.prose a[href*="seedance"],
+.prose a[style*="gradient"],
+.prose a[style*="background"] {
+  all: revert-layer !important;
+  display: inline-flex !important;
+}
+
+/* 15. Mark 하이라이트 */
+.prose mark {
+  background: #fef08a !important;
+  padding: 2px 6px !important;
+  border-radius: 3px !important;
+  color: inherit !important;
+}
+
+/* 16. 강조 span 태그 */
+.prose span[style*="background-color"] {
+  all: revert-layer !important;
+}
+
+/* 17. 폰트 크기 보정 */
+.prose {
+  font-size: 16px !important;
+}
+
+/* 18. 최상위 컨테이너 스타일 유지 */
+.prose > div[style*="max-width"] {
+  all: revert-layer !important;
+}
+
+/* 19. 목차 스타일 */
+.prose ol[style],
+.prose ul[style] {
+  all: revert-layer !important;
+}
+
+/* 20. FAQ 박스 */
+.prose div[style*="background-color: #f8f9fa"] {
+  all: revert-layer !important;
+}
+
+/* 21. 모바일 반응형 개선 */
+@media (max-width: 768px) {
+  .prose pre {
+    padding: 15px !important;
+    font-size: 13px !important;
+  }
+  
+  .prose button[onclick*="clipboard"] {
+    padding: 6px 12px !important;
+    font-size: 12px !important;
+  }
+  
+  .prose h2 {
+    font-size: 24px !important;
+    margin: 40px 0 16px 0 !important;
+  }
+  
+  .prose h3 {
+    font-size: 20px !important;
+    margin: 24px 0 12px 0 !important;
+  }
+  
+  .prose table {
+    font-size: 13px !important;
+  }
+  
+  .prose th,
+  .prose td {
+    padding: 10px !important;
+    font-size: 13px !important;
+  }
+}
