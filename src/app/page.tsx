@@ -37,22 +37,17 @@ async function getPosts(categoryId?: string): Promise<Tool[]> {
     
     const data = await res.json();
 
-    // 🔥 [핵심 수정] 받아온 데이터를 Tool 형식으로 깨끗하게 가공합니다.
     const tools: Tool[] = data.map((post: any) => {
-      // 1. 썸네일 이미지 추출 (없으면 기본 이미지)
       const imageUrl = 
         post._embedded?.['wp:featuredmedia']?.[0]?.source_url || 
-        "https://via.placeholder.com/600x400?text=No+Image"; // 대체 이미지
+        "https://via.placeholder.com/600x400?text=No+Image";
 
-      // 2. 카테고리 이름 추출 (첫 번째 카테고리 사용)
       const categoryName = 
         post._embedded?.['wp:term']?.[0]?.[0]?.name || "AI";
 
       return {
         id: post.id,
-        // 워드프레스는 title.rendered에 실제 제목이 들어있습니다.
         title: post.title.rendered, 
-        // excerpt.rendered에 요약글이 들어있고, HTML 태그를 제거해줍니다.
         description: stripHtml(post.excerpt?.rendered || ""), 
         image: imageUrl,
         category: categoryName,
@@ -68,8 +63,7 @@ async function getPosts(categoryId?: string): Promise<Tool[]> {
 }
 
 export default async function Home({ searchParams }: { searchParams: { category?: string } }) {
-  // Next.js 15+ 에서는 searchParams를 await 해야 할 수 있습니다. (버전에 따라 다름)
-  const params = await searchParams; // Next.js 버전에 따라 await가 필요 없을 수도 있음
+  const params = await searchParams;
   const currentCategoryId = params?.category;
   const tools = await getPosts(currentCategoryId);
 
@@ -92,26 +86,26 @@ export default async function Home({ searchParams }: { searchParams: { category?
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-orange-400 opacity-75"></span>
               <span className="relative inline-flex rounded-full h-2 w-2 bg-orange-500"></span>
             </span>
-            실시간 업데이트 중
+            실시간 검증 & 업데이트 중
           </div>
 
-          {/* 🟠 3. 메인 타이틀 */}
-          <h1 className="text-5xl md:text-7xl font-extrabold text-slate-900 mb-8 tracking-tight leading-tight cursor-default">
-            AI 툴, <br className="md:hidden" />
-            <span className="inline-block animate-float text-gradient-sun pb-2 drop-shadow-sm text-transparent bg-clip-text bg-gradient-to-r from-orange-400 to-amber-600">
-              고민 말고 여기서.
+          {/* 🟠 3. 메인 타이틀 (문구 수정됨) */}
+          <h1 className="text-4xl md:text-6xl font-extrabold text-slate-900 mb-8 tracking-tight leading-tight cursor-default">
+            남들보다 10배 빠른, <br className="md:hidden" />
+            <span className="inline-block animate-float text-gradient-sun pb-2 drop-shadow-sm text-transparent bg-clip-text bg-gradient-to-r from-orange-500 to-amber-600">
+              사람들의 비밀 무기고.
             </span>
           </h1>
           
+          {/* 서브 문구 수정됨 */}
           <p className="text-lg text-slate-600 mb-12 max-w-2xl mx-auto leading-relaxed">
-            복잡한 검색은 이제 그만. <br className="md:hidden" />
-            엄선된 AI 도구와 가이드로 생산성을 200% 높여보세요.
+            복잡한 검색은 그만. <br className="md:hidden" />
+            검증된 AI 도구와 실전 가이드로 당신의 <b>&#39;실행력&#39;</b>을 압도적으로 높여드립니다.
           </p>
           
           {/* 🟠 4. 카테고리 탭 */}
           <div className="flex items-center justify-start md:justify-center gap-3 overflow-x-auto pb-6 pt-2 px-4 no-scrollbar scroll-smooth">
             {AI_CATEGORIES.map((cat) => {
-              // category 파라미터가 없을 때 '전체'가 활성화되도록 로직 수정
               const isAll = cat.id === null && !currentCategoryId;
               const isSelected = currentCategoryId === cat.id?.toString();
               const isActive = isAll || isSelected;
@@ -150,7 +144,6 @@ export default async function Home({ searchParams }: { searchParams: { category?
             {tools.map((tool) => (
               <Link key={tool.id} href={`/tool/${tool.id}`} className="group relative bg-white rounded-2xl overflow-hidden border border-stone-100 hover:border-orange-400 hover:shadow-xl hover:shadow-orange-100 transition-all duration-300 flex flex-col h-full hover:-translate-y-1">
                 <div className="relative aspect-square w-full overflow-hidden bg-stone-100">
-                  {/* 이미지가 유효한지 확인 필요, 외부 이미지 도메인 next.config.js 설정 필요 */}
                   <Image src={tool.image} alt={tool.title} fill className="object-cover group-hover:scale-105 transition-transform duration-500" />
                   <div className="absolute top-3 left-3">
                     <span className="px-2.5 py-1 text-[10px] font-bold text-white bg-black/40 backdrop-blur-md rounded-full border border-white/10 uppercase tracking-wider">
