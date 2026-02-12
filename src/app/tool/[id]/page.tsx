@@ -16,15 +16,18 @@ function decodeHtmlEntity(str: string) {
             .replace(/&#8216;/g, "'");
 }
 
-// 🛠️ 2. [핵심] 워드프레스 똥(?) 스타일 제거 함수 (세탁기)
-// 이 함수가 없으면 모바일에서 글씨가 절대 안 커집니다.
+// 🧹 정밀 세탁 함수: 레이아웃 디자인은 살리고 폰트/너비만 초기화
 function cleanContentStyles(content: string) {
   if (!content) return "";
   return content
-    // 워드프레스가 강제로 박아놓은 폰트 크기, 줄간격, 너비 제한을 삭제합니다.
-    .replace(/style="[^"]*"/g, "") 
-    .replace(/width="[^"]*"/g, "")
-    .replace(/height="[^"]*"/g, "");
+    // 1. 폰트 크기, 줄간격, 폰트 패밀리만 골라서 삭제 (디자인 박스는 유지)
+    .replace(/font-size:[^;"]+;?/g, "") 
+    .replace(/line-height:[^;"]+;?/g, "")
+    .replace(/font-family:[^;"]+;?/g, "")
+    // 2. 고정된 너비(px단위)를 제거하여 모바일에서 삐져나가지 않게 함
+    .replace(/width:\s*\d+px;?/g, "width:100%;")
+    .replace(/max-width:\s*\d+px;?/g, "max-width:100%;")
+    // 3. (선택사항) 굳이 안지워도 되는 배경색(background) 등은 그대로 둡니다.
 }
 
 // 🛠️ 3. 이미지 URL 추출 함수
