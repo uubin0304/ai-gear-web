@@ -5,7 +5,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { useEffect, useState } from "react";
 
-// 🛠️ 1. 특수문자 디코딩 함수
+// 🛠️ 1. 특수문자 디코딩 함수 (for title matching if needed)
 function decodeHtmlEntity(str: string) {
   if (!str) return "";
   return str.replace(/&#(\d+);/g, (match, dec) => String.fromCharCode(dec))
@@ -25,14 +25,45 @@ function getFeaturedImage(post: any) {
 
 // 🛠️ 3. 데이터 가져오기
 async function getPostData(id: string) {
-  // 🔥 여기 수정! fetch( 괄호 추가
+  // 1. Primary Fetch (ID based)
+  // This endpoint sometimes returns stripped content (missing inline styles).
   const res = await fetch(`https://credivita.com/ai/wp-json/wp/v2/posts/${id}?_embed`, {
     cache: 'no-store'
   });
   
   if (!res.ok) return null;
-  const post = await res.json();
+  let post = await res.json();
 
+  // 2. Style Recovery Fallback
+  // Check if content has inline styles (indicating full HTML). If not, try fallback.
+  // The 'search' endpoint is known to return full styled content.
+  const hasInlineStyles = post.content.rendered.includes('style="') || post.content.rendered.includes("style='");
+  
+  if (!hasInlineStyles) {
+    try {
+      // Use title for search, identifying the post by ID in results.
+      // Use decodeHtmlEntity to ensure clean title for search query.
+      const cleanTitle = decodeHtmlEntity(post.title.rendered).replace(/<[^>]*>?/gm, '');
+      const searchUrl = `https://credivita.com/ai/wp-json/wp/v2/posts?search=${encodeURIComponent(cleanTitle)}&_embed`;
+      
+      const searchRes = await fetch(searchUrl, { cache: 'no-store' });
+      if (searchRes.ok) {
+        const searchResults = await searchRes.json();
+        // Find the EXACT same post by ID (to be safe)
+        const betterPost = searchResults.find((p: any) => p.id === post.id);
+        
+        // Only fetch if "betterPost" clearly has more content or styles
+        if (betterPost && betterPost.content.rendered.includes('style="')) {
+           // console.log("Recovered styled content via search endpoint for ID:", id);
+           post = betterPost;
+        }
+      }
+    } catch (e) {
+      console.warn("Fallback style recovery failed:", e);
+    }
+  }
+
+  // 3. Fetch Prev/Next Links
   const listRes = await fetch(
     `https://credivita.com/ai/wp-json/wp/v2/posts?per_page=100&_fields=id`, 
     { cache: 'no-store' }
@@ -45,7 +76,6 @@ async function getPostData(id: string) {
   const prevId = currentIndex !== -1 ? allPosts[currentIndex + 1]?.id : null;
   const nextId = currentIndex !== -1 ? allPosts[currentIndex - 1]?.id : null;
 
-  // 🔥 여기도 수정! fetch( 괄호 추가
   const [prevPost, nextPost] = await Promise.all([
     prevId ? fetch(`https://credivita.com/ai/wp-json/wp/v2/posts/${prevId}?_embed`).then(r => r.ok ? r.json() : null) : null,
     nextId ? fetch(`https://credivita.com/ai/wp-json/wp/v2/posts/${nextId}?_embed`).then(r => r.ok ? r.json() : null) : null
