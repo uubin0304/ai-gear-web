@@ -1,37 +1,31 @@
 @import "tailwindcss";
 
-/* 🎨 1. 테마 설정 (v4 방식) */
 @theme {
-  /* 폰트 연결 */
   --font-sans: "NanumSquare Neo", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   
-  /* 애니메이션 정의 */
   --animate-float: float 3s ease-in-out infinite;
   --animate-blob: blob 7s infinite;
   --animate-shimmer: shimmer 2s linear infinite;
-
+  
   @keyframes float {
     0%, 100% { transform: translateY(0px); }
     50% { transform: translateY(-10px); }
   }
-
   @keyframes blob {
     0% { transform: translate(0px, 0px) scale(1); }
     33% { transform: translate(30px, -50px) scale(1.1); }
     66% { transform: translate(-20px, 20px) scale(0.9); }
     100% { transform: translate(0px, 0px) scale(1); }
   }
-
   @keyframes shimmer {
     from { background-position: 0 0; }
     to { background-position: -200% 0; }
   }
 }
 
-/* 🛠️ 2. 유틸리티 및 기본 설정 */
 @layer base {
   body {
-    background-color: #fafaf9; /* 따뜻한 배경색 */
+    background-color: #fafaf9;
     color: #1c1917;
     font-family: var(--font-sans);
   }
@@ -43,22 +37,19 @@
 }
 
 @layer utilities {
-  /* 주황빛 그라데이션 텍스트 */
   .text-gradient-sun {
     background: linear-gradient(to right, #ea580c, #f59e0b, #fbbf24);
     -webkit-background-clip: text;
     background-clip: text;
     color: transparent;
   }
-
-  /* 유리 질감 카드 */
+  
   .glass-card {
     background-color: rgba(255, 255, 255, 0.6);
     backdrop-filter: blur(12px);
     border: 1px solid rgba(255, 255, 255, 0.2);
   }
-
-  /* 스크롤바 숨김 */
+  
   .no-scrollbar::-webkit-scrollbar {
     display: none;
   }
@@ -68,18 +59,34 @@
   }
 }
 
-/* 🚫 워드프레스 목차 숨김 */
-.toc_container, #ez-toc-container, .lwptoc, .ez-toc-v2_0_69 {
+/* 🚫 워드프레스 자동 목차 완전 제거 */
+[id*="ez-toc"],
+[class*="ez-toc"],
+[id*="toc_"],
+[class*="toc_"],
+.toc_container,
+#ez-toc-container,
+.lwptoc,
+div[id^="toc"],
+nav[id*="toc"],
+.ez-toc-title-container,
+.ez-toc-title,
+.ez-toc-list {
   display: none !important;
+  visibility: hidden !important;
+  height: 0 !important;
+  width: 0 !important;
+  overflow: hidden !important;
+  position: absolute !important;
+  left: -9999px !important;
 }
-/* Next.js 프로젝트의 globals.css 맨 아래에 추가 */
 
-/* 1. 워드프레스에서 넘어오는 blockquote와 info-box 스타일링 (모바일 최적화 수정됨) */
+/* 워드프레스 blockquote와 info-box 스타일링 */
 .prose blockquote, 
 .prose .info-box {
     background-color: #f8fafc !important;
     border-left: 4px solid #f97316 !important;
-    padding: 16px 20px !important; /* 👈 기존 25px에서 줄임 (모바일 공간 확보) */
+    padding: 16px 20px !important;
     border-radius: 12px !important;
     color: #475569 !important;
     line-height: 1.6; 
@@ -91,7 +98,7 @@
     border-bottom: none;
 }
 
-/* 2. 본문 내 모든 code 태그 강조 (사진 스타일) */
+/* 본문 내 모든 code 태그 강조 */
 .prose code {
     background-color: #e2e8f0 !important;
     color: #1e293b !important;
@@ -102,21 +109,25 @@
     font-weight: 500 !important;
 }
 
-/* 3. Next.js의 Tailwind CSS 기본 backtick(`) 제거 (선택사항) */
 .prose code::before,
 .prose code::after {
     content: "" !important;
 }
+
 /* ============================================
    🔥 WordPress 콘텐츠 스타일 완전 보호
    ============================================ */
 
-/* 4. WordPress 인라인 스타일 최우선 적용 */
+/* WordPress 인라인 스타일 최우선 적용 */
+.wordpress-wrapper [style] {
+  all: revert-layer !important;
+}
+
 .prose [style] {
   all: revert-layer !important;
 }
 
-/* 5. Pre/Code 블록 완전 재정의 */
+/* Pre/Code 블록 완전 재정의 */
 .prose pre {
   background: #1f2937 !important;
   color: #f3f4f6 !important;
@@ -138,7 +149,7 @@
   font-size: inherit !important;
 }
 
-/* 6. 복사 버튼 스타일 */
+/* 복사 버튼 스타일 */
 .prose pre + button,
 .prose button[onclick*="clipboard"] {
   position: absolute !important;
@@ -159,7 +170,7 @@
   background: #2563eb !important;
 }
 
-/* 7. 제목 스타일 강제 */
+/* 제목 스타일 강제 */
 .prose h2 {
   font-size: 28px !important;
   color: #1f2937 !important;
@@ -178,7 +189,7 @@
   line-height: 1.4 !important;
 }
 
-/* 8. 본문 텍스트 */
+/* 본문 텍스트 */
 .prose p {
   font-size: 16px !important;
   line-height: 1.9 !important;
@@ -186,7 +197,7 @@
   margin: 16px 0 !important;
 }
 
-/* 9. 리스트 스타일 */
+/* 리스트 스타일 */
 .prose ul,
 .prose ol {
   margin: 20px 0 !important;
@@ -201,7 +212,7 @@
   margin: 8px 0 !important;
 }
 
-/* 10. 테이블 스타일 */
+/* 테이블 스타일 */
 .prose table {
   min-width: 600px !important;
   width: 100% !important;
@@ -232,20 +243,20 @@
   color: #1f2937 !important;
 }
 
-/* 11. 테이블 반응형 래퍼 */
+/* 테이블 반응형 래퍼 */
 .prose div[style*="overflow-x: auto"] {
   overflow-x: auto !important;
   -webkit-overflow-scrolling: touch !important;
   margin: 40px 0 !important;
 }
 
-/* 12. 박스형 콘텐츠 보호 */
+/* 박스형 콘텐츠 보호 */
 .prose div[style*="border-left"],
 .prose div[style*="background"] {
   all: revert-layer !important;
 }
 
-/* 13. 이미지 스타일 */
+/* 이미지 스타일 */
 .prose img {
   width: 100% !important;
   height: auto !important;
@@ -262,7 +273,7 @@
   margin: 20px 0 !important;
 }
 
-/* 14. CTA 버튼 보호 */
+/* CTA 버튼 보호 */
 .prose a[href*="seedance"],
 .prose a[style*="gradient"],
 .prose a[style*="background"] {
@@ -270,7 +281,7 @@
   display: inline-flex !important;
 }
 
-/* 15. Mark 하이라이트 */
+/* Mark 하이라이트 */
 .prose mark {
   background: #fef08a !important;
   padding: 2px 6px !important;
@@ -278,33 +289,33 @@
   color: inherit !important;
 }
 
-/* 16. 강조 span 태그 */
+/* 강조 span 태그 */
 .prose span[style*="background-color"] {
   all: revert-layer !important;
 }
 
-/* 17. 폰트 크기 보정 */
+/* 폰트 크기 보정 */
 .prose {
   font-size: 16px !important;
 }
 
-/* 18. 최상위 컨테이너 스타일 유지 */
+/* 최상위 컨테이너 스타일 유지 */
 .prose > div[style*="max-width"] {
   all: revert-layer !important;
 }
 
-/* 19. 목차 스타일 */
+/* 목차 스타일 */
 .prose ol[style],
 .prose ul[style] {
   all: revert-layer !important;
 }
 
-/* 20. FAQ 박스 */
+/* FAQ 박스 */
 .prose div[style*="background-color: #f8f9fa"] {
   all: revert-layer !important;
 }
 
-/* 21. 모바일 반응형 개선 */
+/* 모바일 반응형 개선 */
 @media (max-width: 768px) {
   .prose pre {
     padding: 15px !important;
