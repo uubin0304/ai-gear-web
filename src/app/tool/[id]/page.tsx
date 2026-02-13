@@ -1,3 +1,4 @@
+import ArticleContent from "@/components/ui/ArticleContent";
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -55,10 +56,8 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
             />
           </div>
 
-          <div
-            className="prose prose-lg max-w-none prose-slate prose-headings:font-bold prose-a:text-orange-600 hover:prose-a:text-orange-800 prose-img:rounded-xl break-words"
-            dangerouslySetInnerHTML={{ __html: post.content.rendered }}
-          />
+<ArticleContent html={post.content.rendered} />
+
         </article>
       </div>
     </main>
